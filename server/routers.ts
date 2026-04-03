@@ -149,15 +149,17 @@ export const appRouter = router({
 
     featured: publicProcedure
       .query(async () => {
+        const dbOpps = await getOpportunities();
+        const featured = dbOpps.filter(opp => opp.isFeatured);
+        if (featured.length > 0) return featured;
         return mockOpportunities.filter(opp => opp.isFeatured);
       }),
 
     delete: protectedProcedure
       .input(z.number())
       .mutation(async ({ ctx, input }) => {
-        // Only allow admin with specific email to delete
-        if (ctx.user.role !== 'admin' || ctx.user.email !== 'alvaresgiulia@gmail.com') {
-          throw new Error('Unauthorized: Only the admin can delete opportunities');
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized: Only admins can delete opportunities');
         }
         return await deleteOpportunity(input);
       }),
@@ -239,9 +241,8 @@ export const appRouter = router({
   admin: router({    
     listUsers: protectedProcedure
       .query(async ({ ctx }) => {
-        // Only allow admin with specific email
-        if (ctx.user.role !== 'admin' || ctx.user.email !== 'alvaresgiulia@gmail.com') {
-          throw new Error('Unauthorized: Only the admin can access user list');
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized: Only admins can access user list');
         }
         
         const { getDb } = await import("./db");
@@ -269,9 +270,8 @@ export const appRouter = router({
         message: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Only allow admin with specific email
-        if (ctx.user.role !== 'admin' || ctx.user.email !== 'alvaresgiulia@gmail.com') {
-          throw new Error('Unauthorized: Only the admin can send notifications');
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized: Only admins can send notifications');
         }
         
         const { notifyOwner } = await import("./_core/notification");
