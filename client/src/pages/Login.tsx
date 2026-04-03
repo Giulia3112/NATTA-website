@@ -12,12 +12,12 @@ import {
 } from "firebase/auth";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useFirebaseAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { firebaseUser, firebaseLoading } = useFirebaseAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -26,8 +26,8 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // If already authenticated, redirect to dashboard
-  if (!firebaseLoading && firebaseUser) {
+  // Only redirect after the SERVER confirms authentication
+  if (!authLoading && isAuthenticated) {
     setLocation("/dashboard");
     return null;
   }
@@ -64,7 +64,7 @@ export default function Login() {
     }
   };
 
-  if (firebaseLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner />
