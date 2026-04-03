@@ -30,24 +30,31 @@ export async function authenticateRequest(req: Request): Promise<User> {
   let decoded;
   try {
     decoded = await verifyFirebaseToken(token);
-  } catch {
+  } catch (err) {
+    console.error("[Auth] Firebase token verification failed:", err);
     throw ForbiddenError("Invalid or expired Firebase token");
   }
 
   const { uid, email, name, firebase } = decoded;
   const loginMethod = mapProviderToLoginMethod(firebase?.sign_in_provider);
 
-  await db.upsertUser({
-    openId: uid,
-    name: name ?? null,
-    email: email ?? null,
-    loginMethod,
-    lastSignedIn: new Date(),
-  });
+  try {
+    await db.upsertUser({
+      openId: uid,
+      name: name ?? null,
+      email: email ?? null,
+      loginMethod,
+      lastSignedIn: new Date(),
+    });
+  } catch (err) {
+    console.error("[Auth] Database upsertUser failed:", err);
+    throw ForbiddenError("Database error during authentication");
+  }
 
   const user = await db.getUserByOpenId(uid);
 
   if (!user) {
+    console.error("[Auth] User not found after upsert for uid:", uid);
     throw ForbiddenError("User not found after upsert");
   }
 
