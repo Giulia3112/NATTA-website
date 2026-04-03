@@ -39,12 +39,9 @@ export function useAuth(options?: UseAuthOptions) {
   }, [utils]);
 
   const state = useMemo(() => {
-    // Still loading if: Firebase hasn't resolved yet, OR the user is logged in
-    // Firebase-side but we're still waiting for server confirmation
-    const queryPending = !!firebaseUser && !meQuery.data && !meQuery.error;
     return {
       user: meQuery.data ?? null,
-      loading: firebaseLoading || meQuery.isLoading || queryPending,
+      loading: firebaseLoading || meQuery.isLoading,
       error: meQuery.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
     };
@@ -53,7 +50,6 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.error,
     meQuery.isLoading,
     firebaseLoading,
-    firebaseUser,
   ]);
 
   useEffect(() => {

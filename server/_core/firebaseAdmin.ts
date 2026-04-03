@@ -26,5 +26,15 @@ function getFirebaseAdmin(): admin.app.App {
 
 export async function verifyFirebaseToken(token: string): Promise<DecodedIdToken> {
   const app = getFirebaseAdmin();
-  return await admin.auth(app).verifyIdToken(token);
+
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("[Firebase Admin] Token verification timed out after 10s")), 10_000)
+  );
+
+  const result = await Promise.race([
+    admin.auth(app).verifyIdToken(token),
+    timeout,
+  ]);
+
+  return result;
 }
