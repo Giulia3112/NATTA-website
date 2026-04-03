@@ -33,7 +33,7 @@ const FIELDS = [
 ];
 
 export default function AddOpportunity() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     title: "",
@@ -65,6 +65,14 @@ export default function AddOpportunity() {
       toast.error(error.message || "Failed to create opportunity");
     },
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated || user?.role !== 'admin') {
     return (

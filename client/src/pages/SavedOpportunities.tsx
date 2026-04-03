@@ -6,8 +6,16 @@ import { Heart, ArrowRight } from "lucide-react";
 import { mockOpportunities as MOCK_OPPORTUNITIES } from "@shared/mockOpportunities";
 
 export default function SavedOpportunities() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const { savedIds, toggleSaved } = useSavedOpportunities();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -15,9 +23,9 @@ export default function SavedOpportunities() {
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Access Restricted</h1>
           <p className="text-gray-600 mb-6">You need to be authenticated to access saved opportunities.</p>
-          <Link href="/">
+          <Link href="/login">
             <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Back to Home
+              Fazer Login
             </Button>
           </Link>
         </div>

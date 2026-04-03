@@ -18,7 +18,7 @@ export function useAuth(options?: UseAuthOptions) {
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
-    enabled: !firebaseLoading,
+    enabled: !firebaseLoading && !!firebaseUser,
   });
 
   // Re-fetch DB user whenever Firebase auth state changes

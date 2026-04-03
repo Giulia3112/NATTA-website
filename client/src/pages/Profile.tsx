@@ -34,7 +34,7 @@ interface UserProfile {
 }
 
 export default function Profile() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     name: user?.name || "",
@@ -72,15 +72,23 @@ export default function Profile() {
     }
   }, [user]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Access Restricted</h1>
           <p className="text-gray-600 mb-6">You need to be authenticated to access your profile.</p>
-          <Link href="/">
+          <Link href="/login">
             <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Back to Home
+              Fazer Login
             </Button>
           </Link>
         </div>
