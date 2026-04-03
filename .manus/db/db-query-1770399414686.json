@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE opportunities MODIFY COLUMN funding ENUM('Fully funded', 'Partial', 'Stipend', 'Equity-based', 'Not certain') NOT NULL; ALTER TABLE opportunities ADD COLUMN fee ENUM('No-fee', 'Paid') NOT NULL DEFAULT 'No-fee';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 43rcpLFsPHY5rVX.root --database Ue45XmcVHgw73tKkFPCUv7 --execute ALTER TABLE opportunities MODIFY COLUMN funding ENUM('Fully funded', 'Partial', 'Stipend', 'Equity-based', 'Not certain') NOT NULL; ALTER TABLE opportunities ADD COLUMN fee ENUM('No-fee', 'Paid') NOT NULL DEFAULT 'No-fee';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1066
+}
