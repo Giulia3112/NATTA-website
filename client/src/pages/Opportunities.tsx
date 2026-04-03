@@ -67,7 +67,7 @@ export default function Opportunities() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="container py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
         </div>
       </div>

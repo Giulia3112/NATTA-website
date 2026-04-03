@@ -118,7 +118,7 @@ export default function Profile() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="container py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
@@ -270,7 +270,7 @@ export default function Profile() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">A Message from Our Founder</h2>
                 <p className="text-gray-800 leading-relaxed mb-4">
-                  Hi {profile.name}! I'm the CEO and founder of AIpply, and I'm actively using this platform just like you. I personally review user profiles and send curated opportunities based on your interests and background.
+                  Hi {profile.name}! I'm the CEO and founder of NATTA, and I'm actively using this platform just like you. I personally review user profiles and send curated opportunities based on your interests and background.
                 </p>
                 <p className="text-gray-800 leading-relaxed mb-4">
                   Your interests in <strong>{profile.interests.join(", ")}</strong> are exactly what I look for when matching candidates with opportunities. The more detailed your profile, the better I can find the perfect fit for you.
@@ -278,7 +278,7 @@ export default function Profile() {
                 <p className="text-gray-800 leading-relaxed">
                   Keep your profile updated, and watch for personalized opportunities from me. I'm committed to helping ambitious candidates like you discover life-changing opportunities around the world.
                 </p>
-                <p className="text-gray-700 font-semibold mt-4">— The AIpply Team</p>
+                <p className="text-gray-700 font-semibold mt-4">— The NATTA Team</p>
               </div>
             </div>
           </div>

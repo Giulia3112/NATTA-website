@@ -33,7 +33,7 @@ export default function SavedOpportunities() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="container py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/opportunities" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">

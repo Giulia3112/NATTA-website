@@ -8,7 +8,7 @@ export default function About() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="container py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
         </div>
       </div>
@@ -17,10 +17,10 @@ export default function About() {
         {/* Hero */}
         <div className="max-w-3xl mx-auto mb-16">
           <h1 className="text-5xl font-bold mb-6 text-gray-900">
-            About <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">AIpply</span>
+            About <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NATTA</span>
           </h1>
           <p className="text-xl text-gray-600 leading-relaxed">
-            AIpply is more than a search tool. It's more than an application manager. <strong>AIpply is the platform that believes in you.</strong>
+            NATTA is more than a search tool. It's more than an application manager. <strong>NATTA is the platform that believes in you.</strong>
           </p>
         </div>
 
@@ -32,7 +32,7 @@ export default function About() {
               Transform overlooked talent into competitive candidates. We believe geography should not determine your opportunities.
             </p>
             <p className="text-lg text-gray-600 mb-4">
-              We built AIpply for emerging markets — especially Brazil, India, Africa, and underserved Asia — because we know extraordinary talent exists everywhere.
+              We built NATTA for emerging markets — especially Brazil, India, Africa, and underserved Asia — because we know extraordinary talent exists everywhere.
             </p>
             <p className="text-lg text-gray-600">
               Our goal is to expand access to top global opportunities by removing barriers to discovery and management.
@@ -172,7 +172,7 @@ export default function About() {
         <div className="mb-16">
           <h2 className="text-3xl font-bold mb-8 text-gray-900">Markets We Serve</h2>
           <p className="text-lg text-gray-600 mb-8">
-            AIpply was built with a focus on emerging markets, but offers global opportunities for everyone.
+            NATTA was built with a focus on emerging markets, but offers global opportunities for everyone.
           </p>
           <div className="grid md:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">

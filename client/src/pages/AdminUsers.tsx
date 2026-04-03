@@ -321,7 +321,7 @@ export default function AdminUsers() {
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Default: "New opportunity from AIpply Founder: [Opportunity Title]. Check it out on the platform!"
+                  Default: "New opportunity from NATTA Founder: [Opportunity Title]. Check it out on the platform!"
                 </p>
               </div>
 

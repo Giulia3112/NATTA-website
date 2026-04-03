@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "Is AIpply free?",
+    question: "Is NATTA free?",
     answer: "Early access will be included with free and premium plans. We are committed to making opportunity discovery accessible to everyone.",
   },
   {
@@ -50,7 +50,7 @@ export default function FAQ() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="container py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function FAQ() {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-5xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h1>
           <p className="text-xl text-gray-600 mb-12">
-            Find answers to the most common questions about AIpply.
+            Find answers to the most common questions about NATTA.
           </p>
 
           <div className="space-y-4">

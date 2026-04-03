@@ -77,7 +77,7 @@ export default function OpportunityDetail() {
             <span className="text-sm font-medium">Back</span>
           </Link>
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
           <div className="flex items-center gap-2">
             <button
@@ -211,7 +211,7 @@ export default function OpportunityDetail() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">Create Your Profile</h3>
-                    <p className="text-gray-600">Sign up and complete your AIpply profile with your academic and professional information</p>
+                    <p className="text-gray-600">Sign up and complete your NATTA profile with your academic and professional information</p>
                   </div>
                 </div>
 
@@ -270,7 +270,7 @@ export default function OpportunityDetail() {
             <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-24 mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Ready to Apply?</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Start your application journey with AIpply. Track your progress and get personalized feedback.
+                Start your application journey with NATTA. Track your progress and get personalized feedback.
               </p>
               <Button
                 onClick={handleApply}

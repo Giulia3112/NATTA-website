@@ -285,7 +285,7 @@ export const appRouter = router({
         const results = await Promise.all(
           input.userIds.map(async (userId) => {
             const customMessage = input.message || 
-              `New opportunity from AIpply Founder: ${opportunity.title}. Check it out on the platform!`;
+              `New opportunity from NATTA Founder: ${opportunity.title}. Check it out on the platform!`;
             
             return await notifyOwner({
               title: `Early Access: ${opportunity.title}`,

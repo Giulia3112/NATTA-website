@@ -88,8 +88,8 @@ export default function AdminScraper() {
         <div className="container mx-auto flex items-center justify-between py-4">
           <Link href="/">
             <img 
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/ZlpcHhvZgFzgoalz.png" 
-              alt="AIpply" 
+              src="/natta-logo.png" 
+              alt="NATTA" 
               className="h-8"
             />
           </Link>

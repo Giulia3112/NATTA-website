@@ -12,7 +12,7 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="container flex items-center justify-between py-4">
           <Link href="/" className="flex items-center gap-2">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663029712705/UynfIgsIcjZRlhUT.png" alt="AIpply" className="h-8" />
+            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/opportunities" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
@@ -186,7 +186,7 @@ export default function Home() {
       <section className="container py-20 text-center">
         <h2 className="text-4xl font-bold mb-6">Ready to get started?</h2>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Join thousands of candidates transforming their careers with AIpply.
+          Join thousands of candidates transforming their careers with NATTA.
         </p>
         {isAuthenticated ? (
           <Link href="/opportunities">
@@ -208,7 +208,7 @@ export default function Home() {
         <div className="container">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <p className="text-white font-bold mb-4">AIpply</p>
+              <p className="text-white font-bold mb-4">NATTA</p>
               <p className="text-sm">Opportunity platform for emerging market candidates.</p>
             </div>
             <div>
@@ -236,7 +236,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2026 AIpply. All rights reserved.</p>
+            <p>&copy; 2026 NATTA. All rights reserved.</p>
           </div>
         </div>
       </footer>
