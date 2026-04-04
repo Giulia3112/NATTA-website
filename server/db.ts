@@ -143,8 +143,6 @@ export async function getUserApplicationsWithDetails(userId: number) {
   const db = await getDb();
   if (!db) return [];
 
-  const { leftJoin } = await import("drizzle-orm");
-
   return await db
     .select({
       id: applications.id,

@@ -5,7 +5,8 @@ import { z } from "zod";
 import { 
   getOpportunities, 
   getOpportunityById, 
-  getUserApplications, 
+  getUserApplications,
+  getUserApplicationsWithDetails,
   getApplicationById, 
   getUserSavedOpportunities,
   createApplication,
@@ -169,7 +170,6 @@ export const appRouter = router({
   applications: router({
     list: protectedProcedure
       .query(async ({ ctx }) => {
-        const { getUserApplicationsWithDetails } = await import("./db");
         return await getUserApplicationsWithDetails(ctx.user.id);
       }),
 
