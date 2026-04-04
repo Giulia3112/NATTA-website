@@ -39,17 +39,22 @@ export function useAuth(options?: UseAuthOptions) {
   }, [utils]);
 
   const state = useMemo(() => {
+    const resolved = !firebaseLoading && !meQuery.isLoading;
+    // Firebase says user is logged in, but server returned no user = server-side failure
+    const serverAuthFailed = resolved && !!firebaseUser && !meQuery.data && !meQuery.error;
     return {
       user: meQuery.data ?? null,
       loading: firebaseLoading || meQuery.isLoading,
-      error: meQuery.error ?? null,
+      error: meQuery.error ?? (serverAuthFailed ? new Error("Server authentication failed") : null),
       isAuthenticated: Boolean(meQuery.data),
+      serverAuthFailed,
     };
   }, [
     meQuery.data,
     meQuery.error,
     meQuery.isLoading,
     firebaseLoading,
+    firebaseUser,
   ]);
 
   useEffect(() => {

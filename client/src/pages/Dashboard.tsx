@@ -62,7 +62,7 @@ const mockApplications: Application[] = [
 const STATUSES = ["Applied", "In Progress", "Accepted", "Rejected"] as const;
 
 export default function Dashboard() {
-  const { user, isAuthenticated, loading, error, logout } = useAuth();
+  const { user, isAuthenticated, loading, error, logout, serverAuthFailed } = useAuth();
   const [applications, setApplications] = useState<Application[]>(mockApplications);
   const [viewMode, setViewMode] = useState<"kanban" | "calendar">("kanban");
   const [showModal, setShowModal] = useState(false);
@@ -83,7 +83,7 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated) {
-    const isServerError = !!error;
+    const isServerError = !!error || serverAuthFailed;
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
@@ -92,23 +92,24 @@ export default function Dashboard() {
           </h1>
           <p className="text-gray-600 mb-6">
             {isServerError
-              ? "Não foi possível verificar sua sessão no servidor. Tente sair e entrar novamente."
+              ? "Você está logado, mas o servidor não conseguiu verificar sua sessão (erro de banco de dados). Tente sair e entrar novamente."
               : "Você precisa estar autenticado para acessar o dashboard."}
           </p>
           <div className="flex gap-3 justify-center">
-            {isServerError && (
+            {isServerError ? (
               <Button
                 className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 onClick={() => logout()}
               >
                 Sair e tentar novamente
               </Button>
+            ) : (
+              <Link href="/login">
+                <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Fazer Login
+                </Button>
+              </Link>
             )}
-            <Link href="/login">
-              <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Fazer Login
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
