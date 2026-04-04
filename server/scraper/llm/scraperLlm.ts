@@ -2,26 +2,30 @@
  * Unified LLM client for the scraper.
  *
  * Priority (first available wins):
- *   1. Google Gemini  — free tier: 1 500 req/day via GEMINI_API_KEY
- *   2. MiniMax        — cheap paid via MINIMAX_API_KEY
- *   3. Forge/Gemini   — Cursor IDE proxy, dev-only (BUILT_IN_FORGE_API_KEY)
+ *   1. Groq     — free: 30 RPM, 6000 RPD via GROQ_API_KEY (recommended)
+ *   2. Gemini   — free: 15 RPM, 1500 RPD via GEMINI_API_KEY
+ *   3. MiniMax  — paid via MINIMAX_API_KEY
+ *   4. Forge    — Cursor IDE proxy, dev-only
  *
- * All providers share the same OpenAI-compatible chat format so the call
- * site is identical regardless of which backend is used.
+ * All providers share the OpenAI-compatible chat format.
  *
- * HOW TO GET A FREE GEMINI KEY:
- *   1. Go to https://aistudio.google.com/apikey
- *   2. Click "Create API key" (Google account required)
- *   3. Add GEMINI_API_KEY to .env and to Render environment variables
+ * HOW TO GET A FREE GROQ KEY (recommended):
+ *   1. Go to https://console.groq.com → API Keys
+ *   2. Sign up (free) and create a key
+ *   3. Add GROQ_API_KEY to .env and to Render environment variables
  */
 
 import { ENV } from "../../_core/env";
 
-// Gemini via its OpenAI-compatible endpoint (free tier)
+// Groq — fastest free tier: 30 RPM, 6000 RPD
+const GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
+
+// Gemini via its OpenAI-compatible endpoint (free tier: 15 RPM)
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
-// MiniMax international endpoint
+// MiniMax international endpoint (paid)
 const MINIMAX_BASE = "https://api.minimaxi.chat/v1/chat/completions";
 const MINIMAX_MODEL = "MiniMax-Text-01";
 
@@ -43,6 +47,9 @@ interface Provider {
 }
 
 function getProvider(): Provider {
+  if (ENV.groqApiKey) {
+    return { name: "Groq", url: GROQ_BASE, model: GROQ_MODEL, key: ENV.groqApiKey };
+  }
   if (ENV.geminiApiKey) {
     return { name: "Gemini", url: GEMINI_BASE, model: GEMINI_MODEL, key: ENV.geminiApiKey };
   }
@@ -58,7 +65,7 @@ function getProvider(): Provider {
     };
   }
   throw new Error(
-    "[ScraperLLM] No LLM API key configured. Set GEMINI_API_KEY (free) in .env and Render."
+    "[ScraperLLM] No LLM configured. Set GROQ_API_KEY (free at console.groq.com) in Render environment variables."
   );
 }
 

@@ -12,10 +12,9 @@
  */
 
 import { fetchHtml } from "./fetchers/httpFetcher";
-import { firecrawlScrape } from "./fetchers/firecrawlFetcher";
+import { firecrawlScrape, firecrawlDiscoverLinks } from "./fetchers/firecrawlFetcher";
 import { classifyPage } from "./classify";
 import { extractOpportunity } from "./extract";
-import { callScraperLlm, parseScraperJson } from "./llm/scraperLlm";
 import type { OpportunitySource } from "./sources";
 import { getSortedSources } from "./sources";
 
@@ -51,59 +50,81 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// Paths that are clearly not individual opportunity pages
+const SKIP_PATH_PATTERNS = [
+  /\/(category|categories|tag|tags|author|page|search|feed|rss|sitemap|wp-content|wp-json)/i,
+  /\/(about|contact|privacy|terms|login|register|faq|help|support)/i,
+  /\.(jpg|jpeg|png|gif|pdf|svg|css|js|xml|json)$/i,
+  /^#/, // anchors
+];
+
+/**
+ * Extract candidate opportunity URLs from raw HTML using regex — no LLM cost.
+ * Filters same-domain links that look like individual content pages.
+ */
+function extractLinksFromHtml(html: string, baseUrl: string, maxLinks: number): string[] {
+  const hrefRegex = /href=["']([^"'#\s]{4,})["']/gi;
+  const seen = new Set<string>();
+  const links: string[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    let href = match[1].trim();
+
+    // Normalise relative URLs
+    if (href.startsWith("/")) {
+      href = `${baseUrl}${href}`;
+    } else if (!href.startsWith("http")) {
+      continue;
+    }
+
+    // Only same-domain links
+    if (!href.startsWith(baseUrl)) continue;
+
+    // Skip utility/navigation pages
+    const path = href.replace(baseUrl, "");
+    if (SKIP_PATH_PATTERNS.some((re) => re.test(path))) continue;
+
+    // Prefer paths that have at least 2 segments (likely individual posts/programs)
+    const segments = path.split("/").filter(Boolean);
+    if (segments.length < 1) continue;
+
+    if (!seen.has(href)) {
+      seen.add(href);
+      links.push(href);
+    }
+  }
+
+  return links.slice(0, maxLinks);
+}
+
 /**
  * Discover opportunity URLs from a source's listing page.
- * Uses simple LLM prompt on the raw HTML/markdown.
+ * Uses HTML link parsing — no LLM calls, no rate limits.
  */
 async function discoverUrls(source: OpportunitySource): Promise<string[]> {
   const listingUrl = `${source.baseUrl}${source.listingPath}`;
   console.log(`[Scraper] Discovering URLs from ${source.name} (${listingUrl})`);
 
-  let content = "";
-
+  // Try Firecrawl first for JS pages (returns links array directly)
   if (source.fetchStrategy === "firecrawl") {
-    const { markdown, ok } = await firecrawlScrape(listingUrl);
-    if (ok) content = markdown;
-  }
-
-  // Always fall back to HTTP if Firecrawl didn't work or isn't configured
-  if (!content) {
-    const { html, ok } = await fetchHtml(listingUrl);
-    if (!ok || !html) {
-      console.warn(`[Scraper] Could not fetch listing page for ${source.name}`);
-      return [];
+    const links = await firecrawlDiscoverLinks(source.baseUrl, source.listingPath, source.maxLinks);
+    if (links.length > 0) {
+      console.log(`[Scraper] ${source.name}: found ${links.length} links via Firecrawl`);
+      return links;
     }
-    content = html;
   }
 
-  // Use MiniMax to extract opportunity links from the listing
-  try {
-    const raw = await callScraperLlm({
-      messages: [
-        {
-          role: "system",
-          content:
-            'Extract up to 10 individual opportunity page URLs from this content. Return ONLY valid JSON like {"urls":["https://..."]}. Include only links to specific opportunity/program pages, not category or index pages. No markdown, no explanation, no extra text.',
-        },
-        {
-          role: "user",
-          content: `Base URL: ${source.baseUrl}\nContent:\n${content.slice(0, 8000)}`,
-        },
-      ],
-      maxTokens: 512,
-    });
-
-    const data = parseScraperJson<{ urls?: string[] }>(raw);
-    const urls: string[] = Array.isArray(data.urls) ? data.urls : [];
-
-    return urls
-      .filter((u) => typeof u === "string" && u.length > 0)
-      .map((u) => (u.startsWith("http") ? u : `${source.baseUrl}${u.startsWith("/") ? u : "/" + u}`))
-      .slice(0, source.maxLinks);
-  } catch (err) {
-    console.warn(`[Scraper] URL discovery failed for ${source.name}: ${err}`);
+  // Fall back to simple HTTP + HTML parsing
+  const { html, ok } = await fetchHtml(listingUrl);
+  if (!ok || !html) {
+    console.warn(`[Scraper] Could not fetch listing page for ${source.name}`);
     return [];
   }
+
+  const links = extractLinksFromHtml(html, source.baseUrl, source.maxLinks);
+  console.log(`[Scraper] ${source.name}: found ${links.length} candidate links`);
+  return links;
 }
 
 /**
