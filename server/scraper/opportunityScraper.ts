@@ -176,7 +176,10 @@ async function processSource(source: OpportunitySource): Promise<ScrapedOpportun
 
 /**
  * Run the full scraping pipeline across all (or selected) sources.
- * Sources are processed in parallel batches of up to 3 at once.
+ *
+ * Sources are processed ONE AT A TIME to stay within Gemini free tier limits
+ * (15 req/min). Each source already has internal delays between page fetches.
+ * This is intentionally conservative — quality over speed.
  */
 export async function scrapeAllWebsites(
   sources = getSortedSources()
@@ -184,17 +187,15 @@ export async function scrapeAllWebsites(
   console.log(`[Scraper] Starting pipeline across ${sources.length} sources...`);
   const all: ScrapedOpportunity[] = [];
 
-  // Process sources in batches of 3 (avoid overwhelming servers or rate limits)
-  const BATCH_SIZE = 3;
-  for (let i = 0; i < sources.length; i += BATCH_SIZE) {
-    const batch = sources.slice(i, i + BATCH_SIZE);
-    const settled = await Promise.allSettled(batch.map(processSource));
-
-    for (const result of settled) {
-      if (result.status === "fulfilled") {
-        all.push(...result.value);
-      }
+  for (const source of sources) {
+    try {
+      const results = await processSource(source);
+      all.push(...results);
+    } catch (err) {
+      console.error(`[Scraper] Unexpected error for ${source.name}: ${err}`);
     }
+    // Small pause between sources to avoid hitting rate limits
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   console.log(`[Scraper] Pipeline complete. Total scraped: ${all.length}`);

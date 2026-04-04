@@ -62,9 +62,32 @@ function getProvider(): Provider {
   );
 }
 
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Extract the retry-after delay (in ms) from a Gemini 429 response body.
+ * Falls back to `defaultMs` if not found.
+ */
+function parseRetryDelay(body: string, defaultMs: number): number {
+  try {
+    const data = JSON.parse(body);
+    const details: any[] = data?.[0]?.error?.details ?? data?.error?.details ?? [];
+    const retryInfo = details.find((d: any) => d["@type"]?.includes("RetryInfo"));
+    if (retryInfo?.retryDelay) {
+      const seconds = parseFloat(retryInfo.retryDelay.replace("s", ""));
+      if (!isNaN(seconds)) return Math.ceil(seconds * 1000) + 1000; // +1s buffer
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return defaultMs;
+}
+
 /**
  * Call the best available LLM with the given messages.
- * Returns the raw text content of the model's response.
+ * Automatically retries on 429 rate-limit responses (up to 3 times).
  */
 export async function callScraperLlm(opts: ScraperLlmOptions): Promise<string> {
   const provider = getProvider();
@@ -76,29 +99,46 @@ export async function callScraperLlm(opts: ScraperLlmOptions): Promise<string> {
     temperature: 0.1,
   };
 
-  const response = await fetch(provider.url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${provider.key}`,
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(30_000),
-  });
+  const MAX_RETRIES = 3;
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`[${provider.name}] API error ${response.status}: ${text}`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await fetch(provider.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${provider.key}`,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (response.status === 429) {
+      const body = await response.text();
+      if (attempt === MAX_RETRIES) {
+        throw new Error(`[${provider.name}] Rate limit exceeded after ${MAX_RETRIES} retries: ${body}`);
+      }
+      const delay = parseRetryDelay(body, 30_000 * (attempt + 1));
+      console.log(`[ScraperLLM] Rate limited by ${provider.name}, waiting ${Math.round(delay / 1000)}s before retry ${attempt + 1}/${MAX_RETRIES}...`);
+      await sleep(delay);
+      continue;
+    }
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`[${provider.name}] API error ${response.status}: ${text}`);
+    }
+
+    const data = (await response.json()) as any;
+    const content = data?.choices?.[0]?.message?.content;
+
+    if (typeof content !== "string" || !content.trim()) {
+      throw new Error(`[${provider.name}] Empty or invalid response`);
+    }
+
+    return content;
   }
 
-  const data = (await response.json()) as any;
-  const content = data?.choices?.[0]?.message?.content;
-
-  if (typeof content !== "string" || !content.trim()) {
-    throw new Error(`[${provider.name}] Empty or invalid response`);
-  }
-
-  return content;
+  throw new Error(`[${provider.name}] Failed after ${MAX_RETRIES} retries`);
 }
 
 /**
