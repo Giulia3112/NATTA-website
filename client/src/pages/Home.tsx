@@ -104,9 +104,11 @@ export default function Home() {
       {/* Social Proof */}
       <section className="bg-white border-t border-gray-200 py-12">
         <div className="container text-center">
-          <p className="text-gray-600 mb-6">Trusted by ambitious candidates worldwide</p>
           <p className="text-3xl md:text-4xl font-bold text-gray-900">
-            Looking for <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">thousands of opportunities</span>
+            Trusted by ambitious candidates worldwide{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              making thousands of applications
+            </span>
           </p>
         </div>
       </section>
