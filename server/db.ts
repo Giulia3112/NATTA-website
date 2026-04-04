@@ -139,6 +139,32 @@ export async function getUserApplications(userId: number) {
     .execute();
 }
 
+export async function getUserApplicationsWithDetails(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { leftJoin } = await import("drizzle-orm");
+
+  return await db
+    .select({
+      id: applications.id,
+      opportunityId: applications.opportunityId,
+      status: applications.status,
+      notes: applications.notes,
+      appliedAt: applications.appliedAt,
+      programStartDate: applications.programStartDate,
+      programEndDate: applications.programEndDate,
+      title: opportunities.title,
+      organizer: opportunities.organizer,
+      deadline: opportunities.deadline,
+      opportunityType: opportunities.opportunityType,
+    })
+    .from(applications)
+    .leftJoin(opportunities, eq(applications.opportunityId, opportunities.id))
+    .where(eq(applications.userId, userId))
+    .execute();
+}
+
 export async function getApplicationById(id: number) {
   const db = await getDb();
   if (!db) return undefined;

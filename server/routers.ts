@@ -169,7 +169,8 @@ export const appRouter = router({
   applications: router({
     list: protectedProcedure
       .query(async ({ ctx }) => {
-        return await getUserApplications(ctx.user.id);
+        const { getUserApplicationsWithDetails } = await import("./db");
+        return await getUserApplicationsWithDetails(ctx.user.id);
       }),
 
     create: protectedProcedure

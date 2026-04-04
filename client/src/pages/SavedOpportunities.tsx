@@ -1,13 +1,21 @@
 import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Heart, ArrowRight } from "lucide-react";
-import { mockOpportunities as MOCK_OPPORTUNITIES } from "@shared/mockOpportunities";
 
 export default function SavedOpportunities() {
   const { user, isAuthenticated, loading } = useAuth();
   const { savedIds, toggleSaved } = useSavedOpportunities();
+
+  const opportunitiesQuery = trpc.opportunities.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  const savedOpportunities = (opportunitiesQuery.data ?? []).filter(
+    (opp: any) => savedIds.has(String(opp.id))
+  );
 
   if (loading) {
     return (
@@ -33,7 +41,6 @@ export default function SavedOpportunities() {
     );
   }
 
-  const savedOpportunities = MOCK_OPPORTUNITIES.filter((opp: any) => savedIds.has(opp.id));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">

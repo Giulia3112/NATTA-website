@@ -3,7 +3,6 @@ import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Heart, ArrowLeft, Calendar, MapPin, DollarSign, Users, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
-import { mockOpportunities } from "@shared/mockOpportunities";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,17 +17,30 @@ export default function OpportunityDetail() {
   const deleteOpportunityMutation = trpc.opportunities.delete.useMutation();
 
   const opportunityId = params?.id ? parseInt(params.id) : null;
-  const opportunity = mockOpportunities.find((opp: any) => opp.id === opportunityId);
+
+  const opportunityQuery = trpc.opportunities.getById.useQuery(opportunityId!, {
+    enabled: !!opportunityId,
+  });
+
+  const opportunity = opportunityQuery.data;
+
+  if (opportunityQuery.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!opportunity) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Opportunity Not Found</h1>
-          <p className="text-gray-600 mb-6">The opportunity you're looking for doesn't exist.</p>
+          <h1 className="text-3xl font-bold mb-4">Oportunidade não encontrada</h1>
+          <p className="text-gray-600 mb-6">Esta oportunidade não existe ou foi removida.</p>
           <Link href="/opportunities">
             <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Back to Opportunities
+              Voltar para Oportunidades
             </Button>
           </Link>
         </div>
@@ -62,9 +74,12 @@ export default function OpportunityDetail() {
 
   const canDelete = user?.role === 'admin' && user?.email === 'alvaresgiulia@gmail.com';
 
-  // Mock related opportunities
-  const relatedOpportunities = mockOpportunities
-    .filter((opp: any) => opp.id !== opportunity.id && opp.opportunityType === opportunity.opportunityType)
+  const relatedQuery = trpc.opportunities.list.useQuery(
+    { type: (opportunity as any).opportunityType },
+    { enabled: !!(opportunity as any).opportunityType }
+  );
+  const relatedOpportunities = (relatedQuery.data ?? [])
+    .filter((opp: any) => opp.id !== opportunity.id)
     .slice(0, 3);
 
   return (
