@@ -9,6 +9,7 @@
  */
 
 import { callMinimax, parseMinimaxJson } from "./llm/minimaxClient";
+import { ENV } from "../_core/env";
 import { invokeLLM } from "../_core/llm";
 import type { ScrapedOpportunity } from "./opportunityScraper";
 
@@ -75,8 +76,8 @@ export async function extractOpportunity(
     console.warn(`[extract] MiniMax failed, falling back: ${minimaxErr instanceof Error ? minimaxErr.message : minimaxErr}`);
   }
 
-  // Fallback: invokeLLM
-  if (!parsed) {
+  // Fallback: invokeLLM (Forge/Gemini) — only available in dev/Cursor IDE
+  if (!parsed && ENV.forgeApiKey) {
     try {
       const result = await invokeLLM({
         messages: [
@@ -90,9 +91,10 @@ export async function extractOpportunity(
       parsed = typeof raw === "string" ? JSON.parse(raw) : {};
     } catch (fallbackErr) {
       console.error(`[extract] Fallback also failed for ${url}: ${fallbackErr}`);
-      return null;
     }
   }
+
+  if (!parsed) return null;
 
   if (!parsed?.title || !parsed?.organizer) {
     console.warn(`[extract] Missing required fields from ${url}`);

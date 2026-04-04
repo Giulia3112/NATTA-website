@@ -15,7 +15,7 @@ import { fetchHtml } from "./fetchers/httpFetcher";
 import { firecrawlScrape } from "./fetchers/firecrawlFetcher";
 import { classifyPage } from "./classify";
 import { extractOpportunity } from "./extract";
-import { invokeLLM } from "../_core/llm";
+import { callMinimax, parseMinimaxJson } from "./llm/minimaxClient";
 import type { OpportunitySource } from "./sources";
 import { getSortedSources } from "./sources";
 
@@ -76,26 +76,25 @@ async function discoverUrls(source: OpportunitySource): Promise<string[]> {
     content = html;
   }
 
-  // Use LLM to extract opportunity links from the listing
+  // Use MiniMax to extract opportunity links from the listing
   try {
-    const result = await invokeLLM({
+    const result = await callMinimax({
       messages: [
         {
           role: "system",
           content:
-            "Extract up to 10 individual opportunity page URLs from this content. Return only a JSON object with a 'urls' array of strings. Only include links that seem to be individual opportunity/program pages, not category pages.",
+            'Extract up to 10 individual opportunity page URLs from this content. Return ONLY a JSON object like {"urls":["https://..."]}. Include only links to specific opportunity/program pages, not category or index pages. No markdown, no explanation.',
         },
         {
           role: "user",
           content: `Base URL: ${source.baseUrl}\nContent:\n${content.slice(0, 8000)}`,
         },
       ],
-      response_format: { type: "json_object" },
-      max_tokens: 512,
+      responseSchemaName: "url_extraction",
+      maxTokens: 512,
     });
 
-    const raw = result.choices[0]?.message?.content ?? '{"urls":[]}';
-    const data = typeof raw === "string" ? JSON.parse(raw) : {};
+    const data = parseMinimaxJson<{ urls?: string[] }>(result.content);
     const urls: string[] = Array.isArray(data.urls) ? data.urls : [];
 
     return urls
