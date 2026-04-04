@@ -46,27 +46,37 @@ interface Provider {
   key: string;
 }
 
+let loggedActiveProvider = false;
+
 function getProvider(): Provider {
+  let p: Provider;
   if (ENV.groqApiKey) {
-    return { name: "Groq", url: GROQ_BASE, model: GROQ_MODEL, key: ENV.groqApiKey };
-  }
-  if (ENV.geminiApiKey) {
-    return { name: "Gemini", url: GEMINI_BASE, model: GEMINI_MODEL, key: ENV.geminiApiKey };
-  }
-  if (ENV.minimaxApiKey) {
-    return { name: "MiniMax", url: MINIMAX_BASE, model: MINIMAX_MODEL, key: ENV.minimaxApiKey };
-  }
-  if (ENV.forgeApiKey && ENV.forgeApiUrl) {
-    return {
+    p = { name: "Groq", url: GROQ_BASE, model: GROQ_MODEL, key: ENV.groqApiKey };
+  } else if (ENV.geminiApiKey) {
+    p = { name: "Gemini", url: GEMINI_BASE, model: GEMINI_MODEL, key: ENV.geminiApiKey };
+  } else if (ENV.minimaxApiKey) {
+    p = { name: "MiniMax", url: MINIMAX_BASE, model: MINIMAX_MODEL, key: ENV.minimaxApiKey };
+  } else if (ENV.forgeApiKey && ENV.forgeApiUrl) {
+    p = {
       name: "Forge",
       url: `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`,
       model: "gemini-2.5-flash",
       key: ENV.forgeApiKey,
     };
+  } else {
+    throw new Error(
+      "[ScraperLLM] No LLM configured. Set GROQ_API_KEY (free at console.groq.com) in Render environment variables."
+    );
   }
-  throw new Error(
-    "[ScraperLLM] No LLM configured. Set GROQ_API_KEY (free at console.groq.com) in Render environment variables."
-  );
+  if (!loggedActiveProvider) {
+    loggedActiveProvider = true;
+    const hint =
+      p.name !== "Groq" && !ENV.groqApiKey
+        ? " (add GROQ_API_KEY on this host to use Groq instead of exhausted Gemini quota)"
+        : "";
+    console.log(`[ScraperLLM] Active provider: ${p.name}${hint}`);
+  }
+  return p;
 }
 
 async function sleep(ms: number) {

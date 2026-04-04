@@ -2,7 +2,7 @@
  * Main scraping pipeline.
  *
  * Flow per source:
- *   1. Discover opportunity URLs (LLM extracts links from listing page)
+ *   1. Discover opportunity URLs (HTML link parsing; Firecrawl for JS listings)
  *   2. Fetch each URL (HTTP or Firecrawl depending on source strategy)
  *   3. Classify — is this actually an opportunity? (MiniMax, cheap, fast)
  *   4. Extract — structured data extraction (MiniMax → Forge/Gemini fallback)
@@ -55,47 +55,72 @@ const SKIP_PATH_PATTERNS = [
   /\/(category|categories|tag|tags|author|page|search|feed|rss|sitemap|wp-content|wp-json)/i,
   /\/(about|contact|privacy|terms|login|register|faq|help|support)/i,
   /\.(jpg|jpeg|png|gif|pdf|svg|css|js|xml|json)$/i,
-  /^#/, // anchors
+  /xmlrpc\.php/i,
+];
+
+/** Third-party snippets in pathname — often mis-linked as same-host paths */
+const JUNK_PATH_SNIPPETS = [
+  "googletagmanager",
+  "google-analytics",
+  "doubleclick",
+  "facebook.net",
+  "connect.facebook",
+  "jquery.com",
+  "code.jquery",
+  "fonts.googleapis",
+  "gstatic.com",
 ];
 
 /**
- * Extract candidate opportunity URLs from raw HTML using regex — no LLM cost.
- * Filters same-domain links that look like individual content pages.
+ * Extract candidate opportunity URLs from raw HTML — no LLM cost.
+ * Resolves hrefs with the URL API (handles protocol-relative //... correctly).
  */
 function extractLinksFromHtml(html: string, baseUrl: string, maxLinks: number): string[] {
-  const hrefRegex = /href=["']([^"'#\s]{4,})["']/gi;
+  let site: URL;
+  try {
+    site = new URL(baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl);
+  } catch {
+    return [];
+  }
+
+  const host = site.hostname.toLowerCase();
+  const hrefRegex = /href=["']([^"'#\s]+)["']/gi;
   const seen = new Set<string>();
   const links: string[] = [];
 
   let match: RegExpExecArray | null;
   while ((match = hrefRegex.exec(html)) !== null) {
-    let href = match[1].trim();
+    const raw = match[1].trim();
+    if (!raw || raw === "#") continue;
+    if (/^javascript:/i.test(raw) || /^mailto:/i.test(raw) || /^tel:/i.test(raw)) continue;
 
-    // Normalise relative URLs
-    if (href.startsWith("/")) {
-      href = `${baseUrl}${href}`;
-    } else if (!href.startsWith("http")) {
+    let resolved: URL;
+    try {
+      if (raw.startsWith("//")) {
+        resolved = new URL(`https:${raw}`);
+      } else {
+        resolved = new URL(raw, `${site.origin}/`);
+      }
+    } catch {
       continue;
     }
 
-    // Only same-domain links
-    if (!href.startsWith(baseUrl)) continue;
+    if (resolved.protocol !== "http:" && resolved.protocol !== "https:") continue;
+    if (resolved.hostname.toLowerCase() !== host) continue;
 
-    // Skip utility/navigation pages
-    const path = href.replace(baseUrl, "");
-    if (SKIP_PATH_PATTERNS.some((re) => re.test(path))) continue;
+    const pathLower = (resolved.pathname + resolved.search).toLowerCase();
+    if (SKIP_PATH_PATTERNS.some((re) => re.test(pathLower))) continue;
+    if (JUNK_PATH_SNIPPETS.some((s) => pathLower.includes(s))) continue;
 
-    // Prefer paths that have at least 2 segments (likely individual posts/programs)
-    const segments = path.split("/").filter(Boolean);
-    if (segments.length < 1) continue;
-
-    if (!seen.has(href)) {
-      seen.add(href);
-      links.push(href);
+    const canonical = resolved.href;
+    if (!seen.has(canonical)) {
+      seen.add(canonical);
+      links.push(canonical);
+      if (links.length >= maxLinks) break;
     }
   }
 
-  return links.slice(0, maxLinks);
+  return links;
 }
 
 /**
