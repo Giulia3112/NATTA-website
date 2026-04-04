@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { trpc } from "@/lib/trpc";
+import { useFirebaseAuth } from "@/contexts/AuthContext";
 
 interface SavedOpportunitiesContextType {
   savedIds: Set<string>;
@@ -10,39 +12,39 @@ interface SavedOpportunitiesContextType {
 const SavedOpportunitiesContext = createContext<SavedOpportunitiesContextType | undefined>(undefined);
 
 export function SavedOpportunitiesProvider({ children }: { children: ReactNode }) {
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const { firebaseUser } = useFirebaseAuth();
+  const utils = trpc.useUtils();
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("aiply_saved_opportunities");
-    if (stored) {
-      try {
-        setSavedIds(new Set(JSON.parse(stored)));
-      } catch (error) {
-        console.error("Failed to load saved opportunities:", error);
-      }
-    }
-  }, []);
+  const savedQuery = trpc.savedOpportunities.list.useQuery(undefined, {
+    enabled: !!firebaseUser,
+    staleTime: 1000 * 60,
+  });
 
-  // Save to localStorage whenever savedIds changes
-  useEffect(() => {
-    localStorage.setItem("aiply_saved_opportunities", JSON.stringify(Array.from(savedIds)));
-  }, [savedIds]);
+  const saveMutation = trpc.savedOpportunities.save.useMutation({
+    onSuccess: () => utils.savedOpportunities.list.invalidate(),
+  });
+
+  const unsaveMutation = trpc.savedOpportunities.unsave.useMutation({
+    onSuccess: () => utils.savedOpportunities.list.invalidate(),
+  });
+
+  const savedIds = new Set(
+    (savedQuery.data ?? []).map(item => String(item.opportunityId))
+  );
 
   const toggleSaved = (id: string) => {
-    setSavedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
+    if (!firebaseUser) return;
+    const numId = parseInt(id);
+    if (isNaN(numId)) return;
+
+    if (savedIds.has(id)) {
+      unsaveMutation.mutate(numId);
+    } else {
+      saveMutation.mutate(numId);
+    }
   };
 
   const isSaved = (id: string) => savedIds.has(id);
-
   const getSavedCount = () => savedIds.size;
 
   return (

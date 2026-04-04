@@ -1,11 +1,23 @@
-import { invokeLLM } from "../_core/llm";
-
 /**
- * AI-Powered Opportunity Scraper
+ * Main scraping pipeline.
  *
- * Scrapes trustworthy opportunity websites in parallel and uses LLM to
- * extract structured data from the raw HTML pages.
+ * Flow per source:
+ *   1. Discover opportunity URLs (LLM extracts links from listing page)
+ *   2. Fetch each URL (HTTP or Firecrawl depending on source strategy)
+ *   3. Classify — is this actually an opportunity? (MiniMax, cheap, fast)
+ *   4. Extract — structured data extraction (MiniMax → Forge/Gemini fallback)
+ *   5. Deduplicate and return results
+ *
+ * The caller (scraperRouter or scheduler) is responsible for storing results.
  */
+
+import { fetchHtml } from "./fetchers/httpFetcher";
+import { firecrawlScrape } from "./fetchers/firecrawlFetcher";
+import { classifyPage } from "./classify";
+import { extractOpportunity } from "./extract";
+import { invokeLLM } from "../_core/llm";
+import type { OpportunitySource } from "./sources";
+import { getSortedSources } from "./sources";
 
 export interface ScrapedOpportunity {
   url: string;
@@ -29,223 +41,182 @@ export interface ScrapedOpportunity {
   confidence: number;
 }
 
-const TARGET_WEBSITES = [
-  { name: "OpportunityDesk", baseUrl: "https://opportunitydesk.org", listingPath: "/" },
-  { name: "Opportunities For All", baseUrl: "https://opportunitiesforall.com", listingPath: "/opportunities/" },
-  { name: "Scholarship Positions", baseUrl: "https://scholarship-positions.com", listingPath: "/scholarships/" },
-  { name: "Partiu Intercambio", baseUrl: "https://partiuintercambio.org", listingPath: "/bolsas-de-estudo/" },
-  { name: "Fulbright Brazil", baseUrl: "https://fulbright.org.br", listingPath: "/bolsas-para-brasileiros/" },
-  { name: "Sebrae Startups", baseUrl: "https://programas.sebraestartups.com.br", listingPath: "/" },
-  { name: "F6S Programs", baseUrl: "https://www.f6s.com", listingPath: "/programs" },
-  { name: "Station F", baseUrl: "https://stationf.co", listingPath: "/programs/all" },
-  { name: "FindAMasters", baseUrl: "https://www.findamasters.com", listingPath: "/funding/" },
-  { name: "Opportunities Corners", baseUrl: "https://opportunitiescorners.com", listingPath: "/" },
-  { name: "Opportunities Plus", baseUrl: "https://www.opportunitiesplus.com", listingPath: "/opportunities/" },
-  { name: "Opportunity Tracker", baseUrl: "https://opportunitytracker.ug", listingPath: "/" },
-];
+/** Confidence threshold — below this, opportunity goes to pending for admin review */
+const CONFIDENCE_THRESHOLD = 0.75;
 
-async function fetchHTML(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
+/** Delay between individual page fetches to be polite to servers */
+const FETCH_DELAY_MS = 1500;
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return await response.text();
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
-async function extractOpportunityData(html: string, url: string): Promise<ScrapedOpportunity | null> {
+/**
+ * Discover opportunity URLs from a source's listing page.
+ * Uses simple LLM prompt on the raw HTML/markdown.
+ */
+async function discoverUrls(source: OpportunitySource): Promise<string[]> {
+  const listingUrl = `${source.baseUrl}${source.listingPath}`;
+  console.log(`[Scraper] Discovering URLs from ${source.name} (${listingUrl})`);
+
+  let content = "";
+
+  if (source.fetchStrategy === "firecrawl") {
+    const { markdown, ok } = await firecrawlScrape(listingUrl);
+    if (ok) content = markdown;
+  }
+
+  // Always fall back to HTTP if Firecrawl didn't work or isn't configured
+  if (!content) {
+    const { html, ok } = await fetchHtml(listingUrl);
+    if (!ok || !html) {
+      console.warn(`[Scraper] Could not fetch listing page for ${source.name}`);
+      return [];
+    }
+    content = html;
+  }
+
+  // Use LLM to extract opportunity links from the listing
   try {
-    const response = await invokeLLM({
+    const result = await invokeLLM({
       messages: [
         {
           role: "system",
-          content: `You are an expert at extracting structured opportunity data from web pages.
-Extract the following information from the HTML and return it as JSON.
-If the page doesn't contain a valid, specific opportunity, return null for confidence (< 0.6).
-
-Fields:
-- title (string, required)
-- description (string, brief summary, optional)
-- organizer (string, required)
-- deadline (ISO date string or null if rolling/unknown)
-- opportunityType: one of [Scholarship, Fellowship, Accelerator, Incubator, Competition, Internship, Grant, Conference, Exchange Program]
-- stage: one of [High school, Undergraduate, Graduate, Startup idea, MVP, Revenue, Scale, Multi-stage]
-- regions: array of strings e.g. ["Global", "Brazil", "Africa", "Europe", "Latin America", "North America", "Asia"]
-- mode: one of [Online, In-person, Hybrid]
-- fields: array from [Tech, Engineering, AI/ML, Data Science, Business, Finance, Entrepreneurship, Social Impact, Climate, Sustainability, Health, Medicine, Arts, Education, Law, Agriculture, Architecture, Sciences, Mathematics, Languages, Policy]
-- funding: one of [Fully funded, Partial, Stipend, Equity-based, Not certain]
-- fee: one of [No-fee, Paid] — whether there is an application fee
-- requirements (string describing eligibility, optional)
-- benefits (string describing what is offered, optional)
-- programStartDate (ISO date string, optional)
-- programEndDate (ISO date string, optional)
-- fundingAmount (string like "$10,000" or "R$5.000", optional)
-- applicationLink (URL string, optional)
-- confidence (number 0-1)`,
+          content:
+            "Extract up to 10 individual opportunity page URLs from this content. Return only a JSON object with a 'urls' array of strings. Only include links that seem to be individual opportunity/program pages, not category pages.",
         },
         {
           role: "user",
-          content: `Extract opportunity data from this page (URL: ${url}):\n\n${html.substring(0, 10000)}`,
+          content: `Base URL: ${source.baseUrl}\nContent:\n${content.slice(0, 8000)}`,
         },
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "opportunity_extraction",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              description: { type: "string" },
-              organizer: { type: "string" },
-              deadline: { type: ["string", "null"] },
-              opportunityType: { type: "string", enum: ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"] },
-              stage: { type: "string", enum: ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage"] },
-              regions: { type: "array", items: { type: "string" } },
-              mode: { type: "string", enum: ["Online", "In-person", "Hybrid"] },
-              fields: { type: "array", items: { type: "string" } },
-              funding: { type: "string", enum: ["Fully funded", "Partial", "Stipend", "Equity-based", "Not certain"] },
-              fee: { type: "string", enum: ["No-fee", "Paid"] },
-              requirements: { type: "string" },
-              benefits: { type: "string" },
-              programStartDate: { type: ["string", "null"] },
-              programEndDate: { type: ["string", "null"] },
-              fundingAmount: { type: "string" },
-              applicationLink: { type: "string" },
-              confidence: { type: "number" },
-            },
-            required: ["title", "organizer", "opportunityType", "stage", "regions", "mode", "fields", "funding", "fee", "confidence"],
-            additionalProperties: false,
-          },
-        },
-      },
+      response_format: { type: "json_object" },
+      max_tokens: 512,
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content || typeof content !== "string") return null;
+    const raw = result.choices[0]?.message?.content ?? '{"urls":[]}';
+    const data = typeof raw === "string" ? JSON.parse(raw) : {};
+    const urls: string[] = Array.isArray(data.urls) ? data.urls : [];
 
-    const data = JSON.parse(content);
-    if (data.confidence < 0.6) {
-      console.warn(`[Scraper] Low confidence (${data.confidence}) for ${url}`);
-      return null;
-    }
-
-    return {
-      ...data,
-      url,
-      deadline: data.deadline ? new Date(data.deadline) : undefined,
-      programStartDate: data.programStartDate ? new Date(data.programStartDate) : undefined,
-      programEndDate: data.programEndDate ? new Date(data.programEndDate) : undefined,
-      fee: data.fee ?? "No-fee",
-    };
-  } catch (error) {
-    console.error(`[Scraper] Failed to extract data from ${url}:`, error);
-    return null;
+    return urls
+      .filter((u) => typeof u === "string" && u.length > 0)
+      .map((u) => (u.startsWith("http") ? u : `${source.baseUrl}${u.startsWith("/") ? u : "/" + u}`))
+      .slice(0, source.maxLinks);
+  } catch (err) {
+    console.warn(`[Scraper] URL discovery failed for ${source.name}: ${err}`);
+    return [];
   }
 }
 
-async function scrapeWebsite(site: typeof TARGET_WEBSITES[0]): Promise<ScrapedOpportunity[]> {
+/**
+ * Fetch page content (HTML or markdown via Firecrawl).
+ * Returns clean text for LLM consumption.
+ */
+async function fetchPageContent(
+  url: string,
+  strategy: "http" | "firecrawl"
+): Promise<string> {
+  if (strategy === "firecrawl") {
+    const { markdown, ok } = await firecrawlScrape(url);
+    if (ok && markdown) return markdown;
+    // Fall through to HTTP on failure
+  }
+
+  const { html, ok } = await fetchHtml(url);
+  if (!ok || !html) return "";
+
+  // Strip most HTML tags for cleaner LLM input
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s{3,}/g, "\n")
+    .trim();
+}
+
+/**
+ * Process a single source: discover → fetch → classify → extract.
+ */
+async function processSource(source: OpportunitySource): Promise<ScrapedOpportunity[]> {
   const results: ScrapedOpportunity[] = [];
-  try {
-    console.log(`[Scraper] Fetching listing: ${site.name}`);
-    const listingUrl = `${site.baseUrl}${site.listingPath}`;
-    const listingHTML = await fetchHTML(listingUrl);
 
-    const urlResponse = await invokeLLM({
-      messages: [
-        { role: "system", content: "Extract up to 5 individual opportunity page URLs from this HTML listing page. Return as JSON." },
-        { role: "user", content: `Find opportunity URLs from ${site.baseUrl}:\n\n${listingHTML.substring(0, 8000)}` },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "url_extraction",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: { urls: { type: "array", items: { type: "string" } } },
-            required: ["urls"],
-            additionalProperties: false,
-          },
-        },
-      },
-    });
+  const urls = await discoverUrls(source);
+  console.log(`[Scraper] ${source.name}: ${urls.length} URLs to process`);
 
-    const urlContent = urlResponse.choices[0]?.message?.content;
-    const { urls = [] } = JSON.parse(typeof urlContent === "string" ? urlContent : '{"urls":[]}');
-    const limitedUrls: string[] = (urls as string[]).slice(0, 5);
+  for (const url of urls) {
+    try {
+      await sleep(FETCH_DELAY_MS);
 
-    console.log(`[Scraper] ${site.name}: found ${limitedUrls.length} URLs to scrape`);
-
-    // Scrape each opportunity page in parallel (with a concurrency limit of 3)
-    const chunks: string[][] = [];
-    for (let i = 0; i < limitedUrls.length; i += 3) {
-      chunks.push(limitedUrls.slice(i, i + 3));
-    }
-
-    for (const chunk of chunks) {
-      const settled = await Promise.allSettled(
-        chunk.map(async (url) => {
-          const fullUrl = url.startsWith("http") ? url : `${site.baseUrl}${url}`;
-          const html = await fetchHTML(fullUrl);
-          return extractOpportunityData(html, fullUrl);
-        })
-      );
-
-      for (const result of settled) {
-        if (result.status === "fulfilled" && result.value) {
-          results.push(result.value);
-          console.log(`[Scraper] ✓ ${result.value.title}`);
-        }
+      const content = await fetchPageContent(url, source.fetchStrategy);
+      if (!content) {
+        console.warn(`[Scraper] Empty content at ${url}`);
+        continue;
       }
 
-      // Small delay between chunks to be polite to servers
-      if (chunks.indexOf(chunk) < chunks.length - 1) {
-        await new Promise((r) => setTimeout(r, 1500));
+      // Phase 1: classify (cheap — decides if we should spend more tokens)
+      const classification = await classifyPage(content);
+
+      if (!classification.isOpportunity || classification.confidence < CONFIDENCE_THRESHOLD - 0.2) {
+        console.log(`[Scraper] ✗ Skipped (${Math.round(classification.confidence * 100)}% confidence): ${url}`);
+        continue;
       }
+
+      // Phase 2: extract structured data
+      const opportunity = await extractOpportunity(content, url);
+
+      if (opportunity) {
+        results.push(opportunity);
+        console.log(`[Scraper] ✓ Extracted (${Math.round(opportunity.confidence * 100)}%): ${opportunity.title}`);
+      }
+    } catch (err) {
+      console.error(`[Scraper] Error processing ${url}: ${err}`);
     }
-  } catch (error) {
-    console.error(`[Scraper] Failed to scrape ${site.name}:`, error);
   }
 
   return results;
 }
 
 /**
- * Scrape all configured websites in parallel (site-level parallelism,
- * URL-level within each site is also parallel in chunks of 3).
+ * Run the full scraping pipeline across all (or selected) sources.
+ * Sources are processed in parallel batches of up to 3 at once.
  */
-export async function scrapeAllWebsites(): Promise<ScrapedOpportunity[]> {
-  console.log(`[Scraper] Starting parallel scrape of ${TARGET_WEBSITES.length} websites...`);
-
-  const settled = await Promise.allSettled(TARGET_WEBSITES.map(scrapeWebsite));
-
+export async function scrapeAllWebsites(
+  sources = getSortedSources()
+): Promise<ScrapedOpportunity[]> {
+  console.log(`[Scraper] Starting pipeline across ${sources.length} sources...`);
   const all: ScrapedOpportunity[] = [];
-  for (const result of settled) {
-    if (result.status === "fulfilled") {
-      all.push(...result.value);
+
+  // Process sources in batches of 3 (avoid overwhelming servers or rate limits)
+  const BATCH_SIZE = 3;
+  for (let i = 0; i < sources.length; i += BATCH_SIZE) {
+    const batch = sources.slice(i, i + BATCH_SIZE);
+    const settled = await Promise.allSettled(batch.map(processSource));
+
+    for (const result of settled) {
+      if (result.status === "fulfilled") {
+        all.push(...result.value);
+      }
     }
   }
 
-  console.log(`[Scraper] Total scraped: ${all.length} opportunities`);
+  console.log(`[Scraper] Pipeline complete. Total scraped: ${all.length}`);
   return all;
 }
 
+/**
+ * Remove duplicates by title+organizer (case-insensitive).
+ */
 export function deduplicateOpportunities(opps: ScrapedOpportunity[]): ScrapedOpportunity[] {
   const seen = new Set<string>();
   const unique: ScrapedOpportunity[] = [];
+
   for (const opp of opps) {
-    const key = `${opp.title.toLowerCase()}|${opp.organizer.toLowerCase()}`;
+    const key = `${opp.title.toLowerCase().trim()}|${opp.organizer.toLowerCase().trim()}`;
     if (!seen.has(key)) {
       seen.add(key);
       unique.push(opp);
     }
   }
+
   return unique;
 }
