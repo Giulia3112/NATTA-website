@@ -140,3 +140,33 @@ export const savedOpportunities = pgTable("savedOpportunities", {
 
 export type SavedOpportunity = typeof savedOpportunities.$inferSelect;
 export type InsertSavedOpportunity = typeof savedOpportunities.$inferInsert;
+
+export const pendingOpportunitiesStatusEnum = pgEnum("pendingStatus", ["pending", "approved", "rejected"]);
+
+export const pendingOpportunities = pgTable("pendingOpportunities", {
+  id: serial("id").primaryKey(),
+  url: varchar("url", { length: 500 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  organizer: varchar("organizer", { length: 255 }).notNull(),
+  deadline: timestamp("deadline"),
+  opportunityType: opportunityTypeEnum("opportunityType").notNull(),
+  stage: stageEnum("stage").notNull(),
+  regions: jsonb("regions").$type<string[]>().notNull(),
+  mode: modeEnum("mode").notNull(),
+  fields: jsonb("fields").$type<string[]>().notNull(),
+  funding: fundingEnum("funding").notNull(),
+  fee: feeEnum("fee").notNull().default("No-fee"),
+  requirements: text("requirements"),
+  benefits: text("benefits"),
+  programStartDate: timestamp("programStartDate"),
+  programEndDate: timestamp("programEndDate"),
+  fundingAmount: varchar("fundingAmount", { length: 100 }),
+  applicationLink: varchar("applicationLink", { length: 500 }),
+  confidence: text("confidence").notNull().default("0"),
+  status: pendingOpportunitiesStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PendingOpportunity = typeof pendingOpportunities.$inferSelect;
+export type InsertPendingOpportunity = typeof pendingOpportunities.$inferInsert;

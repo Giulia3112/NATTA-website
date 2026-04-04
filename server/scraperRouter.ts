@@ -1,303 +1,309 @@
 import { router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { scrapeAllWebsites, deduplicateOpportunities, type ScrapedOpportunity } from "./scraper/opportunityScraper";
+import { scrapeAllWebsites, deduplicateOpportunities } from "./scraper/opportunityScraper";
 import { getDb } from "./db";
-import { opportunities } from "../drizzle/schema";
+import { opportunities, pendingOpportunities } from "../drizzle/schema";
+import { ENV } from "./_core/env";
+import { eq, and, ilike } from "drizzle-orm";
 
-/**
- * Admin-only procedure that checks if user is admin
- */
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ 
-      code: 'FORBIDDEN',
-      message: 'Only admins can access this endpoint'
-    });
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can access this endpoint" });
   }
   return next({ ctx });
 });
 
-/**
- * Scraper-only procedure that checks if user is the authorized scraper admin
- */
 const scraperAdminProcedure = adminProcedure.use(({ ctx, next }) => {
-  const authorizedEmail = 'alvaresgiulia@gmail.com';
-  
-  if (ctx.user.email !== authorizedEmail) {
-    throw new TRPCError({ 
-      code: 'FORBIDDEN',
-      message: `Only ${authorizedEmail} can activate the scraper`
-    });
+  if (ctx.user.email !== ENV.adminEmail) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Only the main admin can activate the scraper" });
   }
   return next({ ctx });
 });
 
-// In-memory storage for scraped opportunities pending review
-const pendingOpportunities: Map<string, ScrapedOpportunity> = new Map();
+const opportunityUpdateSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  organizer: z.string().min(1),
+  deadline: z.string().optional(),
+  opportunityType: z.enum(["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"]),
+  stage: z.enum(["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage"]),
+  regions: z.array(z.string()).min(1),
+  mode: z.enum(["Online", "In-person", "Hybrid"]),
+  fields: z.array(z.string()).min(1),
+  funding: z.enum(["Fully funded", "Partial", "Stipend", "Equity-based", "Not certain"]),
+  fee: z.enum(["No-fee", "Paid"]).default("No-fee"),
+  requirements: z.string().optional(),
+  benefits: z.string().optional(),
+  programStartDate: z.string().optional(),
+  programEndDate: z.string().optional(),
+  fundingAmount: z.string().optional(),
+  applicationLink: z.string().optional(),
+});
 
 export const scraperRouter = router({
-  /**
-   * Start scraping process (restricted to specific email)
-   */
-  startScraping: scraperAdminProcedure
-    .mutation(async () => {
-      try {
-        console.log("Starting scraping process...");
-        const scraped = await scrapeAllWebsites();
-        const unique = deduplicateOpportunities(scraped);
+  startScraping: scraperAdminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
-        // Store in pending review
-        unique.forEach(opp => {
-          const id = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-          pendingOpportunities.set(id, opp);
-        });
+    try {
+      console.log("[Scraper] Starting scraping process...");
+      const scraped = await scrapeAllWebsites();
+      const unique = deduplicateOpportunities(scraped);
 
-        return {
-          success: true,
-          count: unique.length,
-          message: `Successfully scraped ${unique.length} unique opportunities. Review them in the admin panel.`,
-        };
-      } catch (error) {
-        console.error("Scraping failed:", error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to scrape opportunities',
-        });
-      }
-    }),
+      // Filter out duplicates already in the main opportunities table
+      const existing = await db.select({ title: opportunities.title, organizer: opportunities.organizer }).from(opportunities).execute();
+      const existingKeys = new Set(existing.map((o) => `${o.title.toLowerCase()}|${o.organizer.toLowerCase()}`));
 
-  /**
-   * Get pending opportunities for review (admin only)
-   */
-  getPending: adminProcedure
-    .query(async () => {
-      const pending = Array.from(pendingOpportunities.entries()).map(([id, opp]) => ({
-        id,
-        ...opp,
-      }));
-      return pending;
-    }),
+      // Also filter out items already pending
+      const alreadyPending = await db
+        .select({ title: pendingOpportunities.title, organizer: pendingOpportunities.organizer })
+        .from(pendingOpportunities)
+        .where(eq(pendingOpportunities.status, "pending"))
+        .execute();
+      const pendingKeys = new Set(alreadyPending.map((o) => `${o.title.toLowerCase()}|${o.organizer.toLowerCase()}`));
 
-  /**
-   * Approve and add opportunity to database (admin only)
-   */
-  approve: adminProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
-    .mutation(async ({ input }) => {
-      const opportunity = pendingOpportunities.get(input.id);
-      
-      if (!opportunity) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Opportunity not found in pending list',
-        });
-      }
+      let inserted = 0;
+      let skipped = 0;
 
-      const db = await getDb();
-      if (!db) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Database not available',
-        });
-      }
-
-      try {
-        // Insert into database
-        await db.insert(opportunities).values({
-          title: opportunity.title,
-          description: opportunity.description,
-          organizer: opportunity.organizer,
-          deadline: opportunity.deadline,
-          opportunityType: opportunity.opportunityType,
-          stage: opportunity.stage,
-          regions: opportunity.regions,
-          mode: opportunity.mode,
-          fields: opportunity.fields,
-          funding: opportunity.funding,
-          fee: 'No-fee',
-          requirements: opportunity.requirements,
-          benefits: opportunity.benefits,
-          programStartDate: opportunity.programStartDate,
-          programEndDate: opportunity.programEndDate,
-          fundingAmount: opportunity.fundingAmount,
-          applicationLink: opportunity.applicationLink || opportunity.url,
-          isFeatured: false,
-        }).execute();
-
-        // Remove from pending
-        pendingOpportunities.delete(input.id);
-
-        return {
-          success: true,
-          message: 'Opportunity approved and added to database',
-        };
-      } catch (error) {
-        console.error("Failed to approve opportunity:", error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to add opportunity to database',
-        });
-      }
-    }),
-
-  /**
-   * Reject and remove opportunity from pending (admin only)
-   */
-  reject: adminProcedure
-    .input(z.object({
-      id: z.string(),
-    }))
-    .mutation(async ({ input }) => {
-      const existed = pendingOpportunities.delete(input.id);
-      
-      if (!existed) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Opportunity not found in pending list',
-        });
-      }
-
-      return {
-        success: true,
-        message: 'Opportunity rejected',
-      };
-    }),
-
-  /**
-   * Approve all pending opportunities at once (admin only)
-   */
-  approveAll: adminProcedure
-    .mutation(async () => {
-      const db = await getDb();
-      if (!db) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Database not available',
-        });
-      }
-
-      let approved = 0;
-      const errors: string[] = [];
-
-      for (const [id, opportunity] of Array.from(pendingOpportunities.entries())) {
-        try {
-          await db.insert(opportunities).values({
-            title: opportunity.title,
-            description: opportunity.description,
-            organizer: opportunity.organizer,
-            deadline: opportunity.deadline,
-            opportunityType: opportunity.opportunityType,
-            stage: opportunity.stage,
-            regions: opportunity.regions,
-            mode: opportunity.mode,
-            fields: opportunity.fields,
-            funding: opportunity.funding,
-            requirements: opportunity.requirements,
-            benefits: opportunity.benefits,
-            programStartDate: opportunity.programStartDate,
-            programEndDate: opportunity.programEndDate,
-            fundingAmount: opportunity.fundingAmount,
-            applicationLink: opportunity.applicationLink || opportunity.url,
-            isFeatured: false,
-          }).execute();
-
-          pendingOpportunities.delete(id);
-          approved++;
-        } catch (error) {
-          errors.push(`Failed to approve ${opportunity.title}: ${error}`);
+      for (const opp of unique) {
+        const key = `${opp.title.toLowerCase()}|${opp.organizer.toLowerCase()}`;
+        if (existingKeys.has(key) || pendingKeys.has(key)) {
+          skipped++;
+          continue;
         }
+
+        await db.insert(pendingOpportunities).values({
+          url: opp.url,
+          title: opp.title,
+          description: opp.description,
+          organizer: opp.organizer,
+          deadline: opp.deadline instanceof Date ? opp.deadline : opp.deadline ? new Date(opp.deadline) : undefined,
+          opportunityType: opp.opportunityType,
+          stage: opp.stage,
+          regions: opp.regions,
+          mode: opp.mode,
+          fields: opp.fields,
+          funding: opp.funding,
+          fee: (opp as any).fee ?? "No-fee",
+          requirements: opp.requirements,
+          benefits: opp.benefits,
+          programStartDate: opp.programStartDate instanceof Date ? opp.programStartDate : opp.programStartDate ? new Date(opp.programStartDate) : undefined,
+          programEndDate: opp.programEndDate instanceof Date ? opp.programEndDate : opp.programEndDate ? new Date(opp.programEndDate) : undefined,
+          fundingAmount: opp.fundingAmount,
+          applicationLink: opp.applicationLink ?? opp.url,
+          confidence: String(opp.confidence),
+          status: "pending",
+        }).execute();
+        inserted++;
       }
 
+      console.log(`[Scraper] Done. Inserted: ${inserted}, Skipped (duplicates): ${skipped}`);
       return {
         success: true,
-        approved,
-        errors: errors.length > 0 ? errors : undefined,
-        message: `Approved ${approved} opportunities${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
+        count: inserted,
+        skipped,
+        message: `${inserted} oportunidades novas encontradas para revisão${skipped > 0 ? ` (${skipped} duplicatas ignoradas)` : ""}.`,
       };
-    }),
+    } catch (error) {
+      console.error("[Scraper] Failed:", error);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Falha ao executar o scraping" });
+    }
+  }),
 
-  /**
-   * Clear all pending opportunities (admin only)
-   */
-  clearPending: adminProcedure
-    .mutation(async () => {
-      const count = pendingOpportunities.size;
-      pendingOpportunities.clear();
-      
-      return {
-        success: true,
-        message: `Cleared ${count} pending opportunities`,
-      };
-    }),
+  getPending: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
 
-  /**
-   * Create opportunity manually (admin only)
-   */
-  createManual: adminProcedure
-    .input(z.object({
-      title: z.string().min(1, "Title is required"),
-      description: z.string().optional(),
-      organizer: z.string().min(1, "Organizer is required"),
-      deadline: z.date().nullable(),
-      opportunityType: z.enum(['Scholarship', 'Fellowship', 'Accelerator', 'Incubator', 'Competition', 'Internship', 'Grant', 'Conference', 'Exchange Program']),
-      stage: z.enum(['High school', 'Undergraduate', 'Graduate', 'Startup idea', 'MVP', 'Revenue', 'Scale', 'Multi-stage']),
-      regions: z.array(z.string()).min(1, "At least one region is required"),
-      mode: z.enum(['Online', 'In-person', 'Hybrid']),
-      fields: z.array(z.string()).min(1, "At least one field is required"),
-      funding: z.enum(['Fully funded', 'Partial', 'Stipend', 'Equity-based', 'Not certain']),
-      fee: z.enum(['No-fee', 'Paid']).default('No-fee'),
-      requirements: z.string().optional(),
-      benefits: z.string().optional(),
-      programStartDate: z.date().optional(),
-      programEndDate: z.date().optional(),
-      fundingAmount: z.string().optional(),
-      applicationLink: z.string().url().optional(),
-    }))
+    return await db
+      .select()
+      .from(pendingOpportunities)
+      .where(eq(pendingOpportunities.status, "pending"))
+      .execute();
+  }),
+
+  approve: adminProcedure
+    .input(z.object({ id: z.number(), edits: opportunityUpdateSchema.optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Database not available',
-        });
-      }
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
+      const [pending] = await db
+        .select()
+        .from(pendingOpportunities)
+        .where(eq(pendingOpportunities.id, input.id))
+        .limit(1)
+        .execute();
+
+      if (!pending) throw new TRPCError({ code: "NOT_FOUND", message: "Oportunidade pendente não encontrada" });
+
+      const data = input.edits ?? pending;
+
+      await db.insert(opportunities).values({
+        title: data.title,
+        description: data.description ?? pending.description ?? undefined,
+        organizer: data.organizer,
+        deadline: data.deadline ? new Date(data.deadline as string) : (pending.deadline ?? undefined),
+        opportunityType: data.opportunityType,
+        stage: data.stage,
+        regions: data.regions,
+        mode: data.mode,
+        fields: data.fields,
+        funding: data.funding,
+        fee: data.fee ?? "No-fee",
+        requirements: data.requirements ?? pending.requirements ?? undefined,
+        benefits: data.benefits ?? pending.benefits ?? undefined,
+        programStartDate: data.programStartDate ? new Date(data.programStartDate as string) : (pending.programStartDate ?? undefined),
+        programEndDate: data.programEndDate ? new Date(data.programEndDate as string) : (pending.programEndDate ?? undefined),
+        fundingAmount: data.fundingAmount ?? pending.fundingAmount ?? undefined,
+        applicationLink: data.applicationLink ?? pending.applicationLink ?? undefined,
+        isFeatured: false,
+      }).execute();
+
+      await db.update(pendingOpportunities).set({ status: "approved" }).where(eq(pendingOpportunities.id, input.id)).execute();
+
+      return { success: true, message: "Oportunidade aprovada e adicionada ao banco" };
+    }),
+
+  reject: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const result = await db
+        .update(pendingOpportunities)
+        .set({ status: "rejected" })
+        .where(eq(pendingOpportunities.id, input.id))
+        .execute();
+
+      return { success: true, message: "Oportunidade rejeitada" };
+    }),
+
+  approveAll: adminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+    const pending = await db
+      .select()
+      .from(pendingOpportunities)
+      .where(eq(pendingOpportunities.status, "pending"))
+      .execute();
+
+    let approved = 0;
+    const errors: string[] = [];
+
+    for (const opp of pending) {
       try {
         await db.insert(opportunities).values({
-          title: input.title,
-          description: input.description,
-          organizer: input.organizer,
-          deadline: input.deadline,
-          opportunityType: input.opportunityType,
-          stage: input.stage,
-          regions: input.regions,
-          mode: input.mode,
-          fields: input.fields,
-          funding: input.funding,
-          fee: input.fee,
-          requirements: input.requirements,
-          benefits: input.benefits,
-          programStartDate: input.programStartDate,
-          programEndDate: input.programEndDate,
-          fundingAmount: input.fundingAmount,
-          applicationLink: input.applicationLink,
+          title: opp.title,
+          description: opp.description ?? undefined,
+          organizer: opp.organizer,
+          deadline: opp.deadline ?? undefined,
+          opportunityType: opp.opportunityType,
+          stage: opp.stage,
+          regions: opp.regions,
+          mode: opp.mode,
+          fields: opp.fields,
+          funding: opp.funding,
+          fee: opp.fee,
+          requirements: opp.requirements ?? undefined,
+          benefits: opp.benefits ?? undefined,
+          programStartDate: opp.programStartDate ?? undefined,
+          programEndDate: opp.programEndDate ?? undefined,
+          fundingAmount: opp.fundingAmount ?? undefined,
+          applicationLink: opp.applicationLink ?? undefined,
           isFeatured: false,
         }).execute();
 
-        return {
-          success: true,
-          message: 'Opportunity created successfully',
-        };
+        await db.update(pendingOpportunities).set({ status: "approved" }).where(eq(pendingOpportunities.id, opp.id)).execute();
+        approved++;
       } catch (error) {
-        console.error("Failed to create opportunity:", error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create opportunity',
-        });
+        errors.push(`Falha em "${opp.title}": ${error}`);
       }
+    }
+
+    return {
+      success: true,
+      approved,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `${approved} oportunidades aprovadas${errors.length > 0 ? ` (${errors.length} erros)` : ""}`,
+    };
+  }),
+
+  clearPending: adminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+    await db
+      .update(pendingOpportunities)
+      .set({ status: "rejected" })
+      .where(eq(pendingOpportunities.status, "pending"))
+      .execute();
+
+    return { success: true, message: "Todas as pendências foram descartadas" };
+  }),
+
+  update: adminProcedure
+    .input(z.object({ id: z.number(), data: opportunityUpdateSchema }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      await db
+        .update(pendingOpportunities)
+        .set({
+          title: input.data.title,
+          description: input.data.description,
+          organizer: input.data.organizer,
+          deadline: input.data.deadline ? new Date(input.data.deadline) : undefined,
+          opportunityType: input.data.opportunityType,
+          stage: input.data.stage,
+          regions: input.data.regions,
+          mode: input.data.mode,
+          fields: input.data.fields,
+          funding: input.data.funding,
+          fee: input.data.fee,
+          requirements: input.data.requirements,
+          benefits: input.data.benefits,
+          programStartDate: input.data.programStartDate ? new Date(input.data.programStartDate) : undefined,
+          programEndDate: input.data.programEndDate ? new Date(input.data.programEndDate) : undefined,
+          fundingAmount: input.data.fundingAmount,
+          applicationLink: input.data.applicationLink,
+        })
+        .where(eq(pendingOpportunities.id, input.id))
+        .execute();
+
+      return { success: true, message: "Oportunidade atualizada" };
+    }),
+
+  createManual: adminProcedure
+    .input(opportunityUpdateSchema)
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      await db.insert(opportunities).values({
+        title: input.title,
+        description: input.description,
+        organizer: input.organizer,
+        deadline: input.deadline ? new Date(input.deadline) : undefined,
+        opportunityType: input.opportunityType,
+        stage: input.stage,
+        regions: input.regions,
+        mode: input.mode,
+        fields: input.fields,
+        funding: input.funding,
+        fee: input.fee,
+        requirements: input.requirements,
+        benefits: input.benefits,
+        programStartDate: input.programStartDate ? new Date(input.programStartDate) : undefined,
+        programEndDate: input.programEndDate ? new Date(input.programEndDate) : undefined,
+        fundingAmount: input.fundingAmount,
+        applicationLink: input.applicationLink,
+        isFeatured: false,
+      }).execute();
+
+      return { success: true, message: "Oportunidade criada com sucesso" };
     }),
 });
-
