@@ -50,7 +50,6 @@ export async function classifyPage(
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(content) },
       ],
-      responseSchemaName: "classification",
       maxTokens: 256,
     });
 

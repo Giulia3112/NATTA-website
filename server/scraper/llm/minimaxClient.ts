@@ -18,8 +18,6 @@ export interface MinimaxMessage {
 
 export interface MinimaxOptions {
   messages: MinimaxMessage[];
-  /** Expected JSON schema name (enables structured output mode) */
-  responseSchemaName?: string;
   maxTokens?: number;
 }
 
@@ -40,12 +38,9 @@ export async function callMinimax(opts: MinimaxOptions): Promise<MinimaxResult> 
     model: MINIMAX_MODEL,
     messages: opts.messages,
     max_tokens: opts.maxTokens ?? 2048,
-    temperature: 0.1, // low temperature for structured extraction
+    temperature: 0.1,
+    // MiniMax does NOT support response_format — JSON is enforced via system prompt
   };
-
-  if (opts.responseSchemaName) {
-    payload.response_format = { type: "json_object" };
-  }
 
   const response = await fetch(MINIMAX_BASE_URL, {
     method: "POST",

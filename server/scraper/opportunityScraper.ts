@@ -83,14 +83,13 @@ async function discoverUrls(source: OpportunitySource): Promise<string[]> {
         {
           role: "system",
           content:
-            'Extract up to 10 individual opportunity page URLs from this content. Return ONLY a JSON object like {"urls":["https://..."]}. Include only links to specific opportunity/program pages, not category or index pages. No markdown, no explanation.',
+            'Extract up to 10 individual opportunity page URLs from this content. Return ONLY valid JSON like {"urls":["https://..."]}. Include only links to specific opportunity/program pages, not category or index pages. No markdown, no explanation, no extra text.',
         },
         {
           role: "user",
           content: `Base URL: ${source.baseUrl}\nContent:\n${content.slice(0, 8000)}`,
         },
       ],
-      responseSchemaName: "url_extraction",
       maxTokens: 512,
     });
 

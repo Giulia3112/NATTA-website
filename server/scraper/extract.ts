@@ -68,7 +68,6 @@ export async function extractOpportunity(
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(content, url) },
       ],
-      responseSchemaName: "opportunity_extraction",
       maxTokens: 1024,
     });
     parsed = parseMinimaxJson<any>(result.content);
