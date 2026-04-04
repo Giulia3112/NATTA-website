@@ -15,7 +15,7 @@ import { fetchHtml } from "./fetchers/httpFetcher";
 import { firecrawlScrape } from "./fetchers/firecrawlFetcher";
 import { classifyPage } from "./classify";
 import { extractOpportunity } from "./extract";
-import { callMinimax, parseMinimaxJson } from "./llm/minimaxClient";
+import { callScraperLlm, parseScraperJson } from "./llm/scraperLlm";
 import type { OpportunitySource } from "./sources";
 import { getSortedSources } from "./sources";
 
@@ -78,7 +78,7 @@ async function discoverUrls(source: OpportunitySource): Promise<string[]> {
 
   // Use MiniMax to extract opportunity links from the listing
   try {
-    const result = await callMinimax({
+    const raw = await callScraperLlm({
       messages: [
         {
           role: "system",
@@ -93,7 +93,7 @@ async function discoverUrls(source: OpportunitySource): Promise<string[]> {
       maxTokens: 512,
     });
 
-    const data = parseMinimaxJson<{ urls?: string[] }>(result.content);
+    const data = parseScraperJson<{ urls?: string[] }>(raw);
     const urls: string[] = Array.isArray(data.urls) ? data.urls : [];
 
     return urls

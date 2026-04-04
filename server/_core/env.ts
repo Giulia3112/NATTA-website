@@ -8,7 +8,8 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   // Scraper LLMs
-  minimaxApiKey: process.env.MINIMAX_API_KEY ?? "",
+  geminiApiKey: process.env.GEMINI_API_KEY ?? "",    // free tier: 1500 req/day
+  minimaxApiKey: process.env.MINIMAX_API_KEY ?? "",  // paid fallback
   // Firecrawl — for JS-rendered pages
   firecrawlApiKey: process.env.FIRECRAWL_API_KEY ?? "",
   // How often the auto-scraper runs (cron expression). Default: every 6 hours.

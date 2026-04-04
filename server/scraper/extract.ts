@@ -8,9 +8,7 @@
  * Fallback:    invokeLLM (Forge/Gemini)
  */
 
-import { callMinimax, parseMinimaxJson } from "./llm/minimaxClient";
-import { ENV } from "../_core/env";
-import { invokeLLM } from "../_core/llm";
+import { callScraperLlm, parseScraperJson } from "./llm/scraperLlm";
 import type { ScrapedOpportunity } from "./opportunityScraper";
 
 const SYSTEM_PROMPT = `You are an expert at extracting structured opportunity data from web pages.
@@ -61,36 +59,18 @@ export async function extractOpportunity(
 ): Promise<ScrapedOpportunity | null> {
   let parsed: any = null;
 
-  // Try MiniMax first
   try {
-    const result = await callMinimax({
+    const raw = await callScraperLlm({
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(content, url) },
       ],
       maxTokens: 1024,
     });
-    parsed = parseMinimaxJson<any>(result.content);
-  } catch (minimaxErr) {
-    console.warn(`[extract] MiniMax failed, falling back: ${minimaxErr instanceof Error ? minimaxErr.message : minimaxErr}`);
-  }
-
-  // Fallback: invokeLLM (Forge/Gemini) — only available in dev/Cursor IDE
-  if (!parsed && ENV.forgeApiKey) {
-    try {
-      const result = await invokeLLM({
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserPrompt(content, url) },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 1024,
-      });
-      const raw = result.choices[0]?.message?.content ?? "{}";
-      parsed = typeof raw === "string" ? JSON.parse(raw) : {};
-    } catch (fallbackErr) {
-      console.error(`[extract] Fallback also failed for ${url}: ${fallbackErr}`);
-    }
+    parsed = parseScraperJson<any>(raw);
+  } catch (err) {
+    console.error(`[extract] LLM call failed for ${url}: ${err instanceof Error ? err.message : err}`);
+    return null;
   }
 
   if (!parsed) return null;

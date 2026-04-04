@@ -8,9 +8,7 @@
  * Fallback:    invokeLLM (Forge/Gemini)
  */
 
-import { callMinimax, parseMinimaxJson } from "./llm/minimaxClient";
-import { ENV } from "../_core/env";
-import { invokeLLM } from "../_core/llm";
+import { callScraperLlm, parseScraperJson } from "./llm/scraperLlm";
 
 export interface ClassificationResult {
   isOpportunity: boolean;
@@ -43,9 +41,8 @@ function buildUserPrompt(content: string): string {
 export async function classifyPage(
   content: string
 ): Promise<ClassificationResult> {
-  // Try MiniMax first
   try {
-    const result = await callMinimax({
+    const raw = await callScraperLlm({
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: buildUserPrompt(content) },
@@ -53,45 +50,20 @@ export async function classifyPage(
       maxTokens: 256,
     });
 
-    const parsed = parseMinimaxJson<any>(result.content);
+    const parsed = parseScraperJson<any>(raw);
     return {
       isOpportunity: Boolean(parsed.is_opportunity),
       confidence: Number(parsed.confidence) || 0,
       opportunityTypeGuess: parsed.opportunity_type_guess ?? "other",
       reason: parsed.reason ?? "",
     };
-  } catch (minimaxErr) {
-    console.warn(`[classify] MiniMax failed, falling back: ${minimaxErr instanceof Error ? minimaxErr.message : minimaxErr}`);
+  } catch (err) {
+    console.error(`[classify] Failed: ${err instanceof Error ? err.message : err}`);
+    return {
+      isOpportunity: false,
+      confidence: 0,
+      opportunityTypeGuess: "other",
+      reason: "Classification failed",
+    };
   }
-
-  // Fallback: invokeLLM (Forge/Gemini) — only available in dev/Cursor IDE
-  if (ENV.forgeApiKey) {
-    try {
-      const result = await invokeLLM({
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserPrompt(content) },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 256,
-      });
-      const raw = result.choices[0]?.message?.content ?? "{}";
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : {};
-      return {
-        isOpportunity: Boolean(parsed.is_opportunity),
-        confidence: Number(parsed.confidence) || 0,
-        opportunityTypeGuess: parsed.opportunity_type_guess ?? "other",
-        reason: parsed.reason ?? "",
-      };
-    } catch (fallbackErr) {
-      console.error(`[classify] Fallback also failed: ${fallbackErr}`);
-    }
-  }
-
-  return {
-    isOpportunity: false,
-    confidence: 0,
-    opportunityTypeGuess: "other",
-    reason: "Classification failed — no LLM available",
-  };
 }
