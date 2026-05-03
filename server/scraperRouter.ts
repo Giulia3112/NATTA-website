@@ -21,11 +21,38 @@ const scraperAdminProcedure = adminProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+/** Accepts ISO strings, Date (superjson), or null (e.g. rolling deadline) → DB column or undefined */
+const optionalDbDate = z
+  .union([z.string(), z.date(), z.null()])
+  .optional()
+  .transform((v): Date | undefined => {
+    if (v === null || v === undefined || v === "") return undefined;
+    const d = v instanceof Date ? v : new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  });
+
+function pickDate(
+  primary: Date | string | null | undefined,
+  fallback: Date | string | null | undefined
+): Date | undefined {
+  if (primary instanceof Date && !Number.isNaN(primary.getTime())) return primary;
+  if (typeof primary === "string" && primary.trim() !== "") {
+    const d = new Date(primary);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  if (fallback instanceof Date && !Number.isNaN(fallback.getTime())) return fallback;
+  if (typeof fallback === "string" && fallback.trim() !== "") {
+    const d = new Date(fallback);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return undefined;
+}
+
 const opportunityUpdateSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   organizer: z.string().min(1),
-  deadline: z.string().optional(),
+  deadline: optionalDbDate,
   opportunityType: z.enum(["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"]),
   stage: z.enum(["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage"]),
   regions: z.array(z.string()).min(1),
@@ -35,8 +62,8 @@ const opportunityUpdateSchema = z.object({
   fee: z.enum(["No-fee", "Paid"]).default("No-fee"),
   requirements: z.string().optional(),
   benefits: z.string().optional(),
-  programStartDate: z.string().optional(),
-  programEndDate: z.string().optional(),
+  programStartDate: optionalDbDate,
+  programEndDate: optionalDbDate,
   fundingAmount: z.string().optional(),
   applicationLink: z.string().optional(),
 });
@@ -143,7 +170,7 @@ export const scraperRouter = router({
         title: data.title,
         description: data.description ?? pending.description ?? undefined,
         organizer: data.organizer,
-        deadline: data.deadline ? new Date(data.deadline as string) : (pending.deadline ?? undefined),
+        deadline: pickDate(data.deadline, pending.deadline),
         opportunityType: data.opportunityType,
         stage: data.stage,
         regions: data.regions,
@@ -153,8 +180,8 @@ export const scraperRouter = router({
         fee: data.fee ?? "No-fee",
         requirements: data.requirements ?? pending.requirements ?? undefined,
         benefits: data.benefits ?? pending.benefits ?? undefined,
-        programStartDate: data.programStartDate ? new Date(data.programStartDate as string) : (pending.programStartDate ?? undefined),
-        programEndDate: data.programEndDate ? new Date(data.programEndDate as string) : (pending.programEndDate ?? undefined),
+        programStartDate: pickDate(data.programStartDate, pending.programStartDate),
+        programEndDate: pickDate(data.programEndDate, pending.programEndDate),
         fundingAmount: data.fundingAmount ?? pending.fundingAmount ?? undefined,
         applicationLink: data.applicationLink ?? pending.applicationLink ?? undefined,
         isFeatured: false,
@@ -256,7 +283,7 @@ export const scraperRouter = router({
           title: input.data.title,
           description: input.data.description,
           organizer: input.data.organizer,
-          deadline: input.data.deadline ? new Date(input.data.deadline) : undefined,
+          deadline: input.data.deadline,
           opportunityType: input.data.opportunityType,
           stage: input.data.stage,
           regions: input.data.regions,
@@ -266,8 +293,8 @@ export const scraperRouter = router({
           fee: input.data.fee,
           requirements: input.data.requirements,
           benefits: input.data.benefits,
-          programStartDate: input.data.programStartDate ? new Date(input.data.programStartDate) : undefined,
-          programEndDate: input.data.programEndDate ? new Date(input.data.programEndDate) : undefined,
+          programStartDate: input.data.programStartDate,
+          programEndDate: input.data.programEndDate,
           fundingAmount: input.data.fundingAmount,
           applicationLink: input.data.applicationLink,
         })
@@ -287,7 +314,7 @@ export const scraperRouter = router({
         title: input.title,
         description: input.description,
         organizer: input.organizer,
-        deadline: input.deadline ? new Date(input.deadline) : undefined,
+        deadline: input.deadline,
         opportunityType: input.opportunityType,
         stage: input.stage,
         regions: input.regions,
@@ -297,8 +324,8 @@ export const scraperRouter = router({
         fee: input.fee,
         requirements: input.requirements,
         benefits: input.benefits,
-        programStartDate: input.programStartDate ? new Date(input.programStartDate) : undefined,
-        programEndDate: input.programEndDate ? new Date(input.programEndDate) : undefined,
+        programStartDate: input.programStartDate,
+        programEndDate: input.programEndDate,
         fundingAmount: input.fundingAmount,
         applicationLink: input.applicationLink,
         isFeatured: false,
