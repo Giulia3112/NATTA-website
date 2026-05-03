@@ -56,10 +56,13 @@ export default function AdminUsers() {
     },
   });
 
-  const filteredUsers = users?.filter(u =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const searchLower = searchTerm.toLowerCase();
+  const filteredUsers =
+    users?.filter((u) => {
+      const name = (u.name ?? "").toLowerCase();
+      const email = (u.email ?? "").toLowerCase();
+      return name.includes(searchLower) || email.includes(searchLower);
+    }) ?? [];
 
   const toggleUserSelection = (userId: number) => {
     setSelectedUsers(prev =>
@@ -242,10 +245,10 @@ export default function AdminUsers() {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm font-medium text-gray-900">{user.name ?? "—"}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{user.email}</div>
+                        <div className="text-sm text-gray-600">{user.email ?? "—"}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
