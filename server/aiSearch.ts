@@ -8,9 +8,86 @@
  *   4. Return: NATTA matches (with AI reasons) + optional web snippets
  */
 
-import { callScraperLlm, parseScraperJson } from "./scraper/llm/scraperLlm";
+import { parseScraperJson } from "./scraper/llm/scraperLlm";
 import { getOpportunities } from "./db";
 import { ENV } from "./_core/env";
+
+/**
+ * Dedicated LLM call for AI search.
+ * Uses llama-3.1-8b-instant (500K TPD free) instead of 70b (100K TPD)
+ * so the scraper's token budget is not shared with search.
+ */
+async function callSearchLlm(systemPrompt: string, userQuery: string): Promise<string> {
+  const providers = [
+    ENV.groqApiKey && {
+      name: "Groq",
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      model: "llama-3.1-8b-instant",
+      key: ENV.groqApiKey,
+    },
+    ENV.geminiApiKey && {
+      name: "Gemini",
+      url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      model: "gemini-2.0-flash",
+      key: ENV.geminiApiKey,
+    },
+  ].filter(Boolean) as { name: string; url: string; model: string; key: string }[];
+
+  if (providers.length === 0) {
+    throw new Error(
+      "Nenhuma chave de IA configurada. Adicione GROQ_API_KEY nas variáveis do Render (console.groq.com — gratuito)."
+    );
+  }
+
+  for (const provider of providers) {
+    try {
+      const res = await fetch(provider.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${provider.key}`,
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userQuery },
+          ],
+          max_tokens: 1500,
+          temperature: 0.2,
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      if (res.status === 429) {
+        const body = await res.text();
+        console.warn(`[AISearch] ${provider.name} rate limited: ${body.substring(0, 200)}`);
+        continue; // try next provider
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`[${provider.name}] ${res.status}: ${text.substring(0, 300)}`);
+      }
+
+      const data = (await res.json()) as any;
+      const content = data?.choices?.[0]?.message?.content;
+      if (typeof content !== "string" || !content.trim()) {
+        throw new Error(`[${provider.name}] Resposta vazia`);
+      }
+      return content;
+    } catch (err: any) {
+      if (err.message?.includes("rate limit") || err.message?.includes("429")) {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error(
+    "Limite de tokens diários atingido em todos os provedores de IA. Tente novamente mais tarde ou adicione GEMINI_API_KEY como backup (aistudio.google.com — gratuito)."
+  );
+}
 
 export interface AiSearchMatch {
   id: number;
@@ -82,6 +159,17 @@ async function searchWeb(query: string): Promise<WebSnippet[]> {
   }
 }
 
+// Type abbreviations to save tokens
+const TYPE_SHORT: Record<string, string> = {
+  Scholarship: "Sch", Fellowship: "Fel", Accelerator: "Acc",
+  Incubator: "Inc", Competition: "Comp", Internship: "Int",
+  Grant: "Grant", Conference: "Conf", "Exchange Program": "Exch",
+};
+const STAGE_SHORT: Record<string, string> = {
+  "High school": "HS", Undergraduate: "UG", Graduate: "Grad",
+  "Startup idea": "Idea", MVP: "MVP", Revenue: "Rev", Scale: "Scale", "Multi-stage": "Multi",
+};
+
 function buildOpportunityList(opps: any[]): string {
   return opps
     .map((opp) => {
@@ -93,10 +181,11 @@ function buildOpportunityList(opps: any[]): string {
         typeof opp.fields === "string"
           ? JSON.parse(opp.fields)
           : (opp.fields ?? []);
-      const desc = opp.description
-        ? ` | ${opp.description.substring(0, 120)}`
-        : "";
-      return `[${opp.id}] ${opp.title} | ${opp.opportunityType} | ${opp.stage} | ${regions.slice(0, 3).join("/")} | ${fields.slice(0, 3).join("/")}${desc}`;
+      const type = TYPE_SHORT[opp.opportunityType] ?? opp.opportunityType;
+      const stage = STAGE_SHORT[opp.stage] ?? opp.stage;
+      const reg = regions.slice(0, 2).join("/");
+      const fld = fields.slice(0, 2).join("/");
+      return `${opp.id}:${opp.title}|${type}|${stage}|${reg}|${fld}`;
     })
     .join("\n");
 }
@@ -116,46 +205,21 @@ export async function aiSearchOpportunities(
 
   const oppList = buildOpportunityList(allOpps);
 
-  const systemPrompt = `You are NATTA's AI assistant helping students and entrepreneurs find scholarships, fellowships, accelerators, competitions, grants, internships, and other opportunities.
+  const systemPrompt = `You are NATTA's AI assistant for finding opportunities (scholarships, fellowships, accelerators, competitions, grants, internships).
 
-NATTA's opportunity database (format: [ID] Title | Type | Stage | Regions | Fields | Description):
+DB (format ID:Title|Type|Stage|Regions|Fields):
 ${oppList}
 
-When the user describes what they're looking for, identify the most relevant opportunities.
-Respond ONLY with valid JSON in this exact format:
-{
-  "matches": [
-    {"id": <number>, "reason": "<1-2 sentence explanation in the user's language>"},
-    ...
-  ],
-  "summary": "<2-3 sentence message to the user in their language, summarizing what you found>"
-}
+Return ONLY valid JSON:
+{"matches":[{"id":<number>,"reason":"<1-2 sentences in user's language>"}...],"summary":"<2-3 sentences in user's language>"}
 
-Rules:
-- Return at most 8 matches, ranked by relevance (most relevant first)
-- Only return genuinely relevant matches — quality over quantity
-- Detect the user's language and respond entirely in that language
-- If the query is in Portuguese, respond in Portuguese
-- If no good matches exist, return empty matches array and explain in summary
-- Do NOT invent IDs — only use IDs that exist in the list above`;
+Rules: max 8 matches ranked by relevance; respond in user's language; only use IDs from the list; empty matches if nothing fits.`;
 
   let raw: string;
   try {
-    raw = await callScraperLlm({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: query },
-      ],
-      maxTokens: 1500,
-    });
+    raw = await callSearchLlm(systemPrompt, query);
   } catch (err: any) {
-    const msg = err?.message ?? String(err);
-    if (msg.includes("No LLM configured") || msg.includes("GROQ_API_KEY")) {
-      throw new Error(
-        "Nenhuma chave de IA configurada no servidor. Adicione GROQ_API_KEY nas variáveis de ambiente do Render (console.groq.com → API Keys → gratuito)."
-      );
-    }
-    throw new Error(`Erro ao chamar a IA: ${msg}`);
+    throw new Error(`Erro ao chamar a IA: ${err?.message ?? String(err)}`);
   }
 
   let llmResult: LlmResponse;
