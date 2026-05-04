@@ -82,7 +82,7 @@ export const opportunities = pgTable("opportunities", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  organizer: varchar("organizer", { length: 255 }).notNull(),
+  organizer: varchar("organizer", { length: 255 }).notNull().default("Não informado"),
   deadline: timestamp("deadline"),
   opportunityType: opportunityTypeEnum("opportunityType").notNull(),
   stage: stageEnum("stage").notNull(),

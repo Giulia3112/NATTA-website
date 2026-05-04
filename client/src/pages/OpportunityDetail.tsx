@@ -24,6 +24,14 @@ export default function OpportunityDetail() {
 
   const opportunity = opportunityQuery.data;
 
+  const relatedQuery = trpc.opportunities.list.useQuery(
+    { type: (opportunity as any)?.opportunityType },
+    { enabled: !!(opportunity as any)?.opportunityType }
+  );
+  const relatedOpportunities = (relatedQuery.data ?? [])
+    .filter((opp: any) => opp.id !== opportunity?.id)
+    .slice(0, 3);
+
   if (opportunityQuery.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -73,14 +81,6 @@ export default function OpportunityDetail() {
   };
 
   const canDelete = user?.role === 'admin' && user?.email === 'alvaresgiulia@gmail.com';
-
-  const relatedQuery = trpc.opportunities.list.useQuery(
-    { type: (opportunity as any).opportunityType },
-    { enabled: !!(opportunity as any).opportunityType }
-  );
-  const relatedOpportunities = (relatedQuery.data ?? [])
-    .filter((opp: any) => opp.id !== opportunity.id)
-    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
