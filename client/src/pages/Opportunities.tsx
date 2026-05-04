@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Search, MapPin, Calendar, DollarSign, Heart } from "lucide-react";
+import { Search, MapPin, Calendar, DollarSign, Heart, ExternalLink } from "lucide-react";
 import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
 
 const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"];
@@ -39,7 +39,16 @@ export default function Opportunities() {
   const [selectedField, setSelectedField] = useState<string>("");
   const [selectedFunding, setSelectedFunding] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const { isSaved, toggleSaved } = useSavedOpportunities();
+
+  const toggleExpanded = (id: number) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const { data: opportunities = [] } = trpc.opportunities.list.useQuery({
     type: selectedType || undefined,
@@ -236,7 +245,21 @@ export default function Opportunities() {
                       </button>
                     </div>
 
-                    <p className="text-gray-600 mb-4 line-clamp-2">{opp.description}</p>
+                    {opp.description ? (
+                      <div className="mb-4">
+                        <p className={`text-gray-600 text-sm leading-relaxed ${!expandedCards.has(opp.id) ? "line-clamp-3" : ""}`}>
+                          {opp.description}
+                        </p>
+                        {opp.description.length > 180 && (
+                          <button
+                            onClick={() => toggleExpanded(opp.id)}
+                            className="text-blue-600 text-sm font-medium mt-1 hover:text-blue-700 transition-colors"
+                          >
+                            {expandedCards.has(opp.id) ? "Ler menos ↑" : "Ler mais ↓"}
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       <div className="flex items-center gap-2 text-sm">
@@ -249,7 +272,7 @@ export default function Opportunities() {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <DollarSign className="w-4 h-4 text-blue-600" />
-                        <span className="text-gray-600">{opp.funding} {opp.fee && `• ${opp.fee}`}</span>
+                        <span className="text-gray-600">{opp.funding}{opp.fee ? ` • ${opp.fee}` : ""}</span>
                       </div>
                       <div className="text-sm">
                         <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
@@ -267,14 +290,18 @@ export default function Opportunities() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Link href={`/opportunities/${opp.id}`}>
-                        <Button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 ease-in-out font-semibold">
-                          View Details
+                      {opp.applicationLink ? (
+                        <a href={opp.applicationLink} target="_blank" rel="noopener noreferrer" className="flex-1">
+                          <Button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 ease-in-out font-semibold flex items-center justify-center gap-2">
+                            <ExternalLink className="w-4 h-4" />
+                            Visitar Site
+                          </Button>
+                        </a>
+                      ) : (
+                        <Button disabled className="flex-1 px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                          Link indisponível
                         </Button>
-                      </Link>
-                      <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-300 ease-in-out">
-                        Save
-                      </Button>
+                      )}
                     </div>
                   </div>
                 ))

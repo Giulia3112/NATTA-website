@@ -9,7 +9,6 @@ import Login from "./pages/Login";
 import AdminScraper from "./pages/AdminScraper";
 import AdminUsers from "./pages/AdminUsers";
 import Opportunities from "./pages/Opportunities";
-import OpportunityDetail from "./pages/OpportunityDetail";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import Dashboard from "./pages/Dashboard";
@@ -24,7 +23,6 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
       <Route path={"/opportunities"} component={Opportunities} />
-      <Route path={"/opportunities/:id"} component={OpportunityDetail} />
       <Route path={"/saved"} component={SavedOpportunities} />
       <Route path={"/about"} component={About} />
       <Route path={"/faq"} component={FAQ} />
