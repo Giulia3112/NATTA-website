@@ -139,13 +139,24 @@ Rules:
 - If no good matches exist, return empty matches array and explain in summary
 - Do NOT invent IDs — only use IDs that exist in the list above`;
 
-  const raw = await callScraperLlm({
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
-    ],
-    maxTokens: 1500,
-  });
+  let raw: string;
+  try {
+    raw = await callScraperLlm({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: query },
+      ],
+      maxTokens: 1500,
+    });
+  } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    if (msg.includes("No LLM configured") || msg.includes("GROQ_API_KEY")) {
+      throw new Error(
+        "Nenhuma chave de IA configurada no servidor. Adicione GROQ_API_KEY nas variáveis de ambiente do Render (console.groq.com → API Keys → gratuito)."
+      );
+    }
+    throw new Error(`Erro ao chamar a IA: ${msg}`);
+  }
 
   let llmResult: LlmResponse;
   try {

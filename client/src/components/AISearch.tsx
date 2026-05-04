@@ -141,15 +141,16 @@ export default function AISearch() {
             <p className="text-gray-600 font-medium">A IA está analisando {" "}
               <span className="text-blue-600">todas as oportunidades</span>...
             </p>
-            <p className="text-gray-400 text-sm">Isso pode levar alguns segundos</p>
+            <p className="text-gray-400 text-sm">Tenha um pouco de paciência, estamos pareando as oportunidades da NATTA com seus dados na web.</p>
           </div>
         </div>
       )}
 
       {/* Error */}
       {searchMutation.isError && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-          Erro ao processar a busca. Verifique se o GROQ_API_KEY está configurado no servidor.
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm space-y-1">
+          <p className="font-semibold">Erro ao processar a busca</p>
+          <p className="text-red-600">{searchMutation.error?.message ?? "Erro desconhecido."}</p>
         </div>
       )}
 

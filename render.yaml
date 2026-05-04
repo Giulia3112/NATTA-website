@@ -22,6 +22,10 @@ services:
       - key: FIREBASE_PRIVATE_KEY
         sync: false
 
+      # ── LLM para IA (Groq — grátis: console.groq.com) ─────────
+      - key: GROQ_API_KEY
+        sync: false   # cole no painel do Render
+
       # ── Admin ──────────────────────────────────────────────────
       - key: ADMIN_EMAIL
         value: alvaresgiulia@gmail.com
