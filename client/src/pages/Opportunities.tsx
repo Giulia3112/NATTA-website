@@ -3,8 +3,10 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Search, MapPin, Calendar, DollarSign, Heart, ExternalLink } from "lucide-react";
+import { Search, MapPin, Calendar, DollarSign, Heart, ExternalLink, Pencil } from "lucide-react";
 import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+import AISearch from "@/components/AISearch";
 
 const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"];
 const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale"];
@@ -41,6 +43,8 @@ export default function Opportunities() {
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const { isSaved, toggleSaved } = useSavedOpportunities();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const toggleExpanded = (id: number) => {
     setExpandedCards(prev => {
@@ -83,9 +87,12 @@ export default function Opportunities() {
 
       <div className="container py-8">
         <h1 className="text-4xl font-bold mb-2">Opportunities</h1>
-        <p className="text-gray-600 mb-8">Find the perfect opportunity for you</p>
+        <p className="text-gray-600 mb-6">Find the perfect opportunity for you</p>
 
-        {/* Search Bar */}
+        {/* AI Search */}
+        <AISearch />
+
+        {/* Classic Search Bar */}
         <div className="mb-8">
           <div className="relative">
             <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
@@ -235,14 +242,23 @@ export default function Opportunities() {
                         <h3 className="text-xl font-bold text-gray-900 mb-2">{opp.title}</h3>
                         <p className="text-gray-600 text-sm">{opp.organizer}</p>
                       </div>
-                      <button
-                        onClick={() => toggleSaved(opp.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-all duration-300 ease-in-out"
-                      >
-                        <Heart className={`w-5 h-5 transition-all duration-300 ease-in-out ${
-                          isSaved(opp.id) ? "text-red-600 fill-red-600" : "text-gray-400"
-                        }`} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {isAdmin && (
+                          <Link href={`/admin/edit-opportunity/${opp.id}`}>
+                            <button className="p-2 hover:bg-blue-50 rounded-lg transition-all duration-300 ease-in-out" title="Editar oportunidade">
+                              <Pencil className="w-4 h-4 text-blue-500" />
+                            </button>
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => toggleSaved(opp.id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-all duration-300 ease-in-out"
+                        >
+                          <Heart className={`w-5 h-5 transition-all duration-300 ease-in-out ${
+                            isSaved(opp.id) ? "text-red-600 fill-red-600" : "text-gray-400"
+                          }`} />
+                        </button>
+                      </div>
                     </div>
 
                     {opp.description ? (

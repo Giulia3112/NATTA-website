@@ -20,6 +20,8 @@ export const ENV = {
   firecrawlApiKey: trimEnv("FIRECRAWL_API_KEY"),
   // Cron schedule for auto-scraping. Default: every 6 hours.
   scraperCron: process.env.SCRAPER_CRON ?? "0 */6 * * *",
+  // Tavily web search for AI — free 1000 searches/month: https://tavily.com
+  tavilyApiKey: trimEnv("TAVILY_API_KEY"),
   // Transactional email (Resend): https://resend.com/docs/send-with-node
   resendApiKey: trimEnv("RESEND_API_KEY"),
   /** e.g. NATTA <notifications@yourdomain.com> — domain must be verified in Resend */

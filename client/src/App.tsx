@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import SavedOpportunities from "./pages/SavedOpportunities";
 import AddOpportunity from "./pages/AddOpportunity";
+import EditOpportunity from "./pages/EditOpportunity";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -31,6 +32,7 @@ function Router() {
       <Route path={"/admin/scraper"} component={AdminScraper} />
       <Route path={"/admin/users"} component={AdminUsers} />
       <Route path={"/admin/add-opportunity"} component={AddOpportunity} />
+      <Route path={"/admin/edit-opportunity/:id"} component={EditOpportunity} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

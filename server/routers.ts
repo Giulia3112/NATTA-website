@@ -1,6 +1,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { scraperRouter } from "./scraperRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { aiSearchOpportunities } from "./aiSearch";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
@@ -19,6 +20,7 @@ import {
   unsaveOpportunity,
   isOpportunitySaved,
   deleteOpportunity,
+  updateOpportunity,
   getUsersNotifyByIds,
 } from "./db";
 import { mockOpportunities } from "@shared/mockOpportunities";
@@ -158,6 +160,42 @@ export const appRouter = router({
         const featured = dbOpps.filter(opp => opp.isFeatured);
         if (featured.length > 0) return featured;
         return mockOpportunities.filter(opp => opp.isFeatured);
+      }),
+
+    aiSearch: publicProcedure
+      .input(z.object({ query: z.string().min(3).max(500) }))
+      .mutation(async ({ input }) => {
+        return await aiSearchOpportunities(input.query);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().nullable().optional(),
+        organizer: z.string().optional(),
+        deadline: z.date().nullable().optional(),
+        opportunityType: z.string().optional(),
+        stage: z.string().optional(),
+        regions: z.array(z.string()).optional(),
+        mode: z.string().optional(),
+        fields: z.array(z.string()).optional(),
+        funding: z.string().optional(),
+        fee: z.string().optional(),
+        requirements: z.string().nullable().optional(),
+        benefits: z.string().nullable().optional(),
+        programStartDate: z.date().nullable().optional(),
+        programEndDate: z.date().nullable().optional(),
+        fundingAmount: z.string().nullable().optional(),
+        applicationLink: z.string().nullable().optional(),
+        isFeatured: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new Error('Unauthorized: Only admins can update opportunities');
+        }
+        const { id, ...data } = input;
+        return await updateOpportunity(id, data);
       }),
 
     delete: protectedProcedure

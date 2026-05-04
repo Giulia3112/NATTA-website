@@ -323,6 +323,38 @@ export async function isOpportunitySaved(userId: number, opportunityId: number) 
   return result.length > 0;
 }
 
+export async function updateOpportunity(id: number, data: Partial<{
+  title: string;
+  description: string | null;
+  organizer: string;
+  deadline: Date | null;
+  opportunityType: string;
+  stage: string;
+  regions: string[];
+  mode: string;
+  fields: string[];
+  funding: string;
+  fee: string;
+  requirements: string | null;
+  benefits: string | null;
+  programStartDate: Date | null;
+  programEndDate: Date | null;
+  fundingAmount: string | null;
+  applicationLink: string | null;
+  isFeatured: boolean;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(opportunities)
+    .set({ ...data, updatedAt: new Date() } as any)
+    .where(eq(opportunities.id, id))
+    .execute();
+
+  return await getOpportunityById(id);
+}
+
 export async function deleteOpportunity(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
