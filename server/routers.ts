@@ -2,6 +2,9 @@ import { systemRouter } from "./_core/systemRouter";
 import { scraperRouter } from "./scraperRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { ENV } from "./_core/env";
+import { sendOpportunityEmailToUser } from "./_core/email";
 import { 
   getOpportunities, 
   getOpportunityById, 
@@ -15,7 +18,8 @@ import {
   saveOpportunity,
   unsaveOpportunity,
   isOpportunitySaved,
-  deleteOpportunity
+  deleteOpportunity,
+  getUsersNotifyByIds,
 } from "./db";
 import { mockOpportunities } from "@shared/mockOpportunities";
 
@@ -271,34 +275,80 @@ export const appRouter = router({
         message: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new Error('Unauthorized: Only admins can send notifications');
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can send notifications" });
         }
-        
-        const { notifyOwner } = await import("./_core/notification");
+
+        if (!ENV.resendApiKey || !ENV.emailFrom) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Email is not configured. Add RESEND_API_KEY and EMAIL_FROM to the server environment (Render → Environment). Create an API key at https://resend.com",
+          });
+        }
+
         const opportunity = await getOpportunityById(input.opportunityId);
-        
         if (!opportunity) {
-          throw new Error('Opportunity not found');
+          throw new TRPCError({ code: "NOT_FOUND", message: "Opportunity not found" });
         }
-        
-        // Send notification to each user
-        const results = await Promise.all(
-          input.userIds.map(async (userId) => {
-            const customMessage = input.message || 
-              `New opportunity from NATTA Founder: ${opportunity.title}. Check it out on the platform!`;
-            
-            return await notifyOwner({
-              title: `Early Access: ${opportunity.title}`,
-              content: customMessage,
-            });
-          })
-        );
-        
+
+        const uniqueUserIds = [...new Set(input.userIds)];
+        const recipients = await getUsersNotifyByIds(uniqueUserIds);
+        const byId = new Map(recipients.map((r) => [r.id, r]));
+
+        const customMessage =
+          input.message?.trim() ||
+          `There is a new opportunity on NATTA that may interest you: "${opportunity.title}". Open the link below to read the details.`;
+
+        const errors: string[] = [];
+        let sentCount = 0;
+        let skippedNoEmail = 0;
+
+        for (const userId of uniqueUserIds) {
+          const u = byId.get(userId);
+          if (!u) {
+            errors.push(`User id ${userId} not found`);
+            continue;
+          }
+          const email = u.email?.trim();
+          if (!email) {
+            skippedNoEmail++;
+            continue;
+          }
+
+          const result = await sendOpportunityEmailToUser({
+            to: email,
+            recipientName: u.name,
+            opportunityTitle: opportunity.title,
+            organizer: opportunity.organizer,
+            message: customMessage,
+            opportunityId: opportunity.id,
+          });
+
+          if (result.ok) {
+            sentCount++;
+          } else {
+            errors.push(`${email}: ${result.error}`);
+          }
+        }
+
+        if (sentCount === 0) {
+          const detail =
+            skippedNoEmail === uniqueUserIds.length
+              ? "None of the selected users have an email address on file."
+              : errors.join("; ") || "Unknown error";
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `No emails were sent. ${detail}`,
+          });
+        }
+
         return {
           success: true,
-          sentCount: results.filter(r => r).length,
-          totalUsers: input.userIds.length,
+          sentCount,
+          totalUsers: uniqueUserIds.length,
+          skippedNoEmail,
+          errors: errors.length ? errors : undefined,
         };
       }),
   }),

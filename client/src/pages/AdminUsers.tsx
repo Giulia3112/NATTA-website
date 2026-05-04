@@ -45,7 +45,16 @@ export default function AdminUsers() {
 
   const sendNotificationMutation = trpc.admin.sendNotification.useMutation({
     onSuccess: (data) => {
-      toast.success(`Notification sent to ${data.sentCount} users!`);
+      const parts = [`Email sent to ${data.sentCount} user(s).`];
+      if (data.skippedNoEmail && data.skippedNoEmail > 0) {
+        parts.push(`${data.skippedNoEmail} skipped (no email on file).`);
+      }
+      if (data.errors?.length) {
+        parts.push(`Some failed: ${data.errors.join("; ")}`);
+        toast.warning(parts.join(" "));
+      } else {
+        toast.success(parts.join(" "));
+      }
       setShowNotificationModal(false);
       setSelectedUsers([]);
       setSelectedOpportunityId(null);

@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -105,6 +105,21 @@ export async function getUserByOpenId(openId: string) {
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+/** For admin email notifications — id, email, display name */
+export async function getUsersNotifyByIds(
+  userIds: number[]
+): Promise<Array<{ id: number; email: string | null; name: string | null }>> {
+  const db = await getDb();
+  if (!db || userIds.length === 0) return [];
+
+  const unique = [...new Set(userIds)];
+  return await db
+    .select({ id: users.id, email: users.email, name: users.name })
+    .from(users)
+    .where(inArray(users.id, unique))
+    .execute();
 }
 
 export async function getOpportunities() {

@@ -20,4 +20,10 @@ export const ENV = {
   firecrawlApiKey: trimEnv("FIRECRAWL_API_KEY"),
   // Cron schedule for auto-scraping. Default: every 6 hours.
   scraperCron: process.env.SCRAPER_CRON ?? "0 */6 * * *",
+  // Transactional email (Resend): https://resend.com/docs/send-with-node
+  resendApiKey: trimEnv("RESEND_API_KEY"),
+  /** e.g. NATTA <notifications@yourdomain.com> — domain must be verified in Resend */
+  emailFrom: trimEnv("EMAIL_FROM"),
+  /** Public site URL for links in emails (no trailing slash) */
+  appPublicUrl: trimEnv("APP_PUBLIC_URL") || "https://natta.pro",
 };

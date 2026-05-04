@@ -30,8 +30,8 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Sends an owner notification.
- * Currently logs to console — replace with email/push service as needed.
+ * Sends an owner notification (legacy hook).
+ * Admin “notify user” flows use `_core/email.ts` + Resend instead.
  */
 export async function notifyOwner(payload: NotificationPayload): Promise<boolean> {
   const { title, content } = validatePayload(payload);
