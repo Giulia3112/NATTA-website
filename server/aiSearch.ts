@@ -196,6 +196,54 @@ function buildOpportunityList(opps: any[]): string {
     .join("\n");
 }
 
+/**
+ * Keyword pre-filter: scores each opportunity against query words.
+ * Returns up to maxResults relevant candidates. If too few keyword
+ * matches, falls back to a random sample so the LLM always has options.
+ */
+function preFilter(query: string, opps: any[], maxResults = 150): any[] {
+  const stopWords = new Set(["de", "do", "da", "para", "em", "com", "uma", "um", "que", "ou", "e", "the", "for", "in", "a", "an", "of"]);
+  const words = query
+    .toLowerCase()
+    .split(/[\s,;.!?]+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+
+  if (words.length === 0) return opps.slice(0, maxResults);
+
+  const scored = opps.map((opp) => {
+    const regions = typeof opp.regions === "string" ? JSON.parse(opp.regions) : (opp.regions ?? []);
+    const fields = typeof opp.fields === "string" ? JSON.parse(opp.fields) : (opp.fields ?? []);
+    const haystack = [
+      opp.title,
+      opp.organizer,
+      opp.description ?? "",
+      opp.opportunityType,
+      opp.stage,
+      opp.funding,
+      opp.mode,
+      ...regions,
+      ...fields,
+    ].join(" ").toLowerCase();
+
+    const score = words.reduce((acc, w) => acc + (haystack.includes(w) ? 1 : 0), 0);
+    return { opp, score };
+  });
+
+  const matched = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score);
+
+  if (matched.length >= 10) {
+    return matched.slice(0, maxResults).map((s) => s.opp);
+  }
+
+  // Few keyword hits — return top matches + broader sample to not miss semantic matches
+  const matchedOpps = matched.map((s) => s.opp);
+  const matchedIds = new Set(matchedOpps.map((o) => o.id));
+  const others = opps.filter((o) => !matchedIds.has(o.id));
+  // Shuffle others and take enough to fill up to maxResults
+  const shuffled = others.sort(() => Math.random() - 0.5).slice(0, maxResults - matchedOpps.length);
+  return [...matchedOpps, ...shuffled];
+}
+
 export async function aiSearchOpportunities(
   query: string
 ): Promise<AiSearchResult> {
@@ -209,7 +257,8 @@ export async function aiSearchOpportunities(
     };
   }
 
-  const oppList = buildOpportunityList(allOpps);
+  const candidates = preFilter(query, allOpps, 150);
+  const oppList = buildOpportunityList(candidates);
 
   const systemPrompt = `You are NATTA's AI assistant for finding opportunities (scholarships, fellowships, accelerators, competitions, grants, internships).
 
