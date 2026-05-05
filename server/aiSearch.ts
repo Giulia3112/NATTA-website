@@ -25,6 +25,12 @@ async function callSearchLlm(systemPrompt: string, userQuery: string): Promise<s
       model: "llama-3.1-8b-instant",
       key: ENV.groqApiKey,
     },
+    ENV.minimaxApiKey && {
+      name: "MiniMax",
+      url: "https://api.minimaxi.chat/v1/chat/completions",
+      model: "MiniMax-Text-01",
+      key: ENV.minimaxApiKey,
+    },
     ENV.geminiApiKey && {
       name: "Gemini",
       url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -85,7 +91,7 @@ async function callSearchLlm(systemPrompt: string, userQuery: string): Promise<s
   }
 
   throw new Error(
-    "Limite de tokens diários atingido em todos os provedores de IA. Tente novamente mais tarde ou adicione GEMINI_API_KEY como backup (aistudio.google.com — gratuito)."
+    "Limite de tokens diários atingido em todos os provedores de IA. Tente novamente mais tarde ou adicione MINIMAX_API_KEY / GEMINI_API_KEY como backup."
   );
 }
 
