@@ -195,6 +195,7 @@ export async function getApplicationById(id: number) {
 export async function createApplication(data: {
   userId: number;
   opportunityId: number;
+  status?: "Applied" | "In Progress" | "Accepted" | "Rejected";
   notes?: string;
   programStartDate?: Date;
   programEndDate?: Date;
@@ -207,7 +208,7 @@ export async function createApplication(data: {
     .values({
       userId: data.userId,
       opportunityId: data.opportunityId,
-      status: "Applied",
+      status: data.status ?? "Applied",
       notes: data.notes,
       programStartDate: data.programStartDate,
       programEndDate: data.programEndDate,

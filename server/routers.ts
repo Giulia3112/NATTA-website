@@ -218,6 +218,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         opportunityId: z.number(),
+        status: z.enum(["Applied", "In Progress", "Accepted", "Rejected"]).optional(),
         notes: z.string().optional(),
         programStartDate: z.date().optional(),
         programEndDate: z.date().optional(),
@@ -226,6 +227,7 @@ export const appRouter = router({
         return await createApplication({
           userId: ctx.user.id,
           opportunityId: input.opportunityId,
+          status: input.status,
           notes: input.notes,
           programStartDate: input.programStartDate,
           programEndDate: input.programEndDate,

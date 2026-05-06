@@ -2,11 +2,18 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
-import { Search, MapPin, Calendar, DollarSign, Heart, ExternalLink, Pencil } from "lucide-react";
-import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
+import { Link, useLocation } from "wouter";
+import { Search, MapPin, Calendar, DollarSign, ExternalLink, Pencil, Plus, X, CheckCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AISearch from "@/components/AISearch";
+import { toast } from "sonner";
+
+const APPLICATION_STATUSES = [
+  { value: "Applied", label: "Applied", description: "Já me candidatei", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "In Progress", label: "In Progress", description: "Estou preparando a candidatura", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  { value: "Accepted", label: "Accepted", description: "Fui aceito(a)!", color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "Rejected", label: "Rejected", description: "Não fui selecionado(a)", color: "bg-red-100 text-red-700 border-red-200" },
+] as const;
 
 const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program", "Course", "Other"];
 const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage", "Other"];
@@ -42,9 +49,39 @@ export default function Opportunities() {
   const [selectedFunding, setSelectedFunding] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
-  const { isSaved, toggleSaved } = useSavedOpportunities();
+  const [addingOpp, setAddingOpp] = useState<{ id: number; title: string } | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const isAdmin = user?.role === 'admin';
+
+  const createApplicationMutation = trpc.applications.create.useMutation({
+    onSuccess: () => {
+      toast.success("Oportunidade adicionada ao seu dashboard!");
+      setAddingOpp(null);
+      setSelectedStatus("");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Erro ao adicionar candidatura");
+    },
+  });
+
+  const handleAddToDashboard = (opp: { id: number; title: string }) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    setSelectedStatus("");
+    setAddingOpp(opp);
+  };
+
+  const handleConfirmStatus = () => {
+    if (!addingOpp || !selectedStatus) return;
+    createApplicationMutation.mutate({
+      opportunityId: addingOpp.id,
+      status: selectedStatus as any,
+    });
+  };
 
   const toggleExpanded = (id: number) => {
     setExpandedCards(prev => {
@@ -251,12 +288,11 @@ export default function Opportunities() {
                           </Link>
                         )}
                         <button
-                          onClick={() => toggleSaved(opp.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-all duration-300 ease-in-out"
+                          onClick={() => handleAddToDashboard({ id: opp.id, title: opp.title })}
+                          className="p-2 hover:bg-blue-50 rounded-lg transition-all duration-300 ease-in-out"
+                          title="Adicionar às candidaturas"
                         >
-                          <Heart className={`w-5 h-5 transition-all duration-300 ease-in-out ${
-                            isSaved(opp.id) ? "text-red-600 fill-red-600" : "text-gray-400"
-                          }`} />
+                          <Plus className="w-5 h-5 text-blue-500" />
                         </button>
                       </div>
                     </div>
@@ -331,6 +367,65 @@ export default function Opportunities() {
           </div>
         </div>
       </div>
+
+      {/* Add to Dashboard Modal */}
+      {addingOpp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-gray-900">Adicionar ao Dashboard</h2>
+              <button
+                onClick={() => { setAddingOpp(null); setSelectedStatus(""); }}
+                className="p-1 rounded-lg hover:bg-gray-100 transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <p className="text-sm text-blue-700 font-semibold mb-1 truncate">{addingOpp.title}</p>
+            <p className="text-xs text-gray-500 mb-5">Em que estágio você está com essa oportunidade?</p>
+
+            <div className="space-y-3 mb-6">
+              {APPLICATION_STATUSES.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setSelectedStatus(s.value)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all duration-200 text-left ${
+                    selectedStatus === s.value
+                      ? s.color + " border-current shadow-sm"
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold text-sm">{s.label}</p>
+                    <p className="text-xs opacity-75">{s.description}</p>
+                  </div>
+                  {selectedStatus === s.value && (
+                    <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setAddingOpp(null); setSelectedStatus(""); }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={!selectedStatus || createApplicationMutation.isPending}
+                onClick={handleConfirmStatus}
+              >
+                {createApplicationMutation.isPending ? "Adicionando..." : "Adicionar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
