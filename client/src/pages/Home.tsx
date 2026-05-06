@@ -226,7 +226,7 @@ export default function Home() {
               <ul className="space-y-2 text-sm">
                 <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
                 <li><Link href="/faq" className="hover:text-white transition">FAQ</Link></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
+                <li><a href="mailto:Contato@natta.pro" className="hover:text-white transition">Contact</a></li>
               </ul>
             </div>
             <div>
