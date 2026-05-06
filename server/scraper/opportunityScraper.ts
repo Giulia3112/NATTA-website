@@ -24,8 +24,8 @@ export interface ScrapedOpportunity {
   description?: string;
   organizer: string;
   deadline?: Date;
-  opportunityType: "Scholarship" | "Fellowship" | "Accelerator" | "Incubator" | "Competition" | "Internship" | "Grant" | "Conference" | "Exchange Program";
-  stage: "High school" | "Undergraduate" | "Graduate" | "Startup idea" | "MVP" | "Revenue" | "Scale" | "Multi-stage";
+  opportunityType: "Scholarship" | "Fellowship" | "Accelerator" | "Incubator" | "Competition" | "Internship" | "Grant" | "Conference" | "Exchange Program" | "Course" | "Other";
+  stage: "High school" | "Undergraduate" | "Graduate" | "Startup idea" | "MVP" | "Revenue" | "Scale" | "Multi-stage" | "Other";
   regions: string[];
   mode: "Online" | "In-person" | "Hybrid";
   fields: string[];

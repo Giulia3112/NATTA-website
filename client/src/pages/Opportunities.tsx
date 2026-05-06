@@ -8,9 +8,9 @@ import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AISearch from "@/components/AISearch";
 
-const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"];
-const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale"];
-const REGIONS = ["Global", "Africa", "India", "Brazil", "LATAM", "Southeast Asia", "East Asia", "Middle East", "Europe", "USA/Canada"];
+const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program", "Course", "Other"];
+const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage", "Other"];
+const REGIONS = ["Global", "Africa", "India", "Brazil", "LATAM", "Southeast Asia", "East Asia", "Middle East", "Europe", "USA/Canada", "Oceania"];
 const MODES = ["Online", "In-person", "Hybrid"];
 const FIELDS = [
   // Technology & Engineering

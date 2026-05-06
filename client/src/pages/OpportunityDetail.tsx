@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Heart, ArrowLeft, Calendar, MapPin, DollarSign, Users, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Heart, ArrowLeft, Calendar, MapPin, DollarSign, Users, CheckCircle, AlertCircle, Trash2, X } from "lucide-react";
 import { useSavedOpportunities } from "@/contexts/SavedOpportunitiesContext";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -17,9 +17,21 @@ export default function OpportunityDetail() {
   const deleteOpportunityMutation = trpc.opportunities.delete.useMutation();
 
   const opportunityId = params?.id ? parseInt(params.id) : null;
+  const [applicationNotes, setApplicationNotes] = useState("");
 
   const opportunityQuery = trpc.opportunities.getById.useQuery(opportunityId!, {
     enabled: !!opportunityId,
+  });
+
+  const createApplicationMutation = trpc.applications.create.useMutation({
+    onSuccess: () => {
+      toast.success("Oportunidade adicionada às suas candidaturas!");
+      setShowApplicationModal(false);
+      setApplicationNotes("");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Erro ao adicionar candidatura");
+    },
   });
 
   const opportunity = opportunityQuery.data;
@@ -57,6 +69,10 @@ export default function OpportunityDetail() {
   }
 
   const handleApply = () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
     setShowApplicationModal(true);
   };
 
@@ -353,6 +369,56 @@ export default function OpportunityDetail() {
             </div>
           </div>
         </div>
+
+        {/* Application Modal */}
+        {showApplicationModal && opportunity && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Adicionar às Candidaturas</h2>
+                <button
+                  onClick={() => { setShowApplicationModal(false); setApplicationNotes(""); }}
+                  className="p-1 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-1 font-medium">{opportunity.title}</p>
+              <p className="text-xs text-gray-400 mb-4">{opportunity.organizer}</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notas (opcional)
+              </label>
+              <textarea
+                value={applicationNotes}
+                onChange={(e) => setApplicationNotes(e.target.value)}
+                placeholder="Ex: Preciso preparar o CV, solicitar carta de recomendação..."
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-5"
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => { setShowApplicationModal(false); setApplicationNotes(""); }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={createApplicationMutation.isPending}
+                  onClick={() =>
+                    createApplicationMutation.mutate({
+                      opportunityId: opportunity.id,
+                      notes: applicationNotes || undefined,
+                    })
+                  }
+                >
+                  {createApplicationMutation.isPending ? "Adicionando..." : "Adicionar"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Related Opportunities */}
         {relatedOpportunities.length > 0 && (

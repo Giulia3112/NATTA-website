@@ -7,8 +7,8 @@ import { Pencil, ArrowLeft, Check } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-const OPPORTUNITY_TYPES = ['Scholarship', 'Fellowship', 'Accelerator', 'Incubator', 'Competition', 'Internship', 'Grant', 'Conference', 'Exchange Program'];
-const STAGES = ['High school', 'Undergraduate', 'Graduate', 'Startup idea', 'MVP', 'Revenue', 'Scale', 'Multi-stage'];
+const OPPORTUNITY_TYPES = ['Scholarship', 'Fellowship', 'Accelerator', 'Incubator', 'Competition', 'Internship', 'Grant', 'Conference', 'Exchange Program', 'Course', 'Other'];
+const STAGES = ['High school', 'Undergraduate', 'Graduate', 'Startup idea', 'MVP', 'Revenue', 'Scale', 'Multi-stage', 'Other'];
 const MODES = ['Online', 'In-person', 'Hybrid'];
 const FUNDING_TYPES = ['Fully funded', 'Partial', 'Stipend', 'Equity-based', 'Not certain'];
 const FEE_TYPES = ['No-fee', 'Paid'];

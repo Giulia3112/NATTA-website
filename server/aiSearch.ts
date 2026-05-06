@@ -170,6 +170,7 @@ const TYPE_SHORT: Record<string, string> = {
   Scholarship: "Sch", Fellowship: "Fel", Accelerator: "Acc",
   Incubator: "Inc", Competition: "Comp", Internship: "Int",
   Grant: "Grant", Conference: "Conf", "Exchange Program": "Exch",
+  Course: "Course", Other: "Other",
 };
 const STAGE_SHORT: Record<string, string> = {
   "High school": "HS", Undergraduate: "UG", Graduate: "Grad",

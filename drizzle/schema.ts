@@ -24,6 +24,8 @@ export const opportunityTypeEnum = pgEnum("opportunityType", [
   "Grant",
   "Conference",
   "Exchange Program",
+  "Course",
+  "Other",
 ]);
 
 export const stageEnum = pgEnum("stage", [
@@ -35,6 +37,7 @@ export const stageEnum = pgEnum("stage", [
   "Revenue",
   "Scale",
   "Multi-stage",
+  "Other",
 ]);
 
 export const modeEnum = pgEnum("mode", ["Online", "In-person", "Hybrid"]);

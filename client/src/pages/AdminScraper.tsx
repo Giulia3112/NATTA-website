@@ -30,8 +30,8 @@ type PendingOpp = {
   confidence: string;
 };
 
-const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program"] as const;
-const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage"] as const;
+const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program", "Course", "Other"] as const;
+const STAGES = ["High school", "Undergraduate", "Graduate", "Startup idea", "MVP", "Revenue", "Scale", "Multi-stage", "Other"] as const;
 const MODES = ["Online", "In-person", "Hybrid"] as const;
 const FUNDINGS = ["Fully funded", "Partial", "Stipend", "Equity-based", "Not certain"] as const;
 

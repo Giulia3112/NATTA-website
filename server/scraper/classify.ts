@@ -27,7 +27,7 @@ Rules:
 - A generic article, blog post, or list of opportunities is NOT an opportunity itself.
 - Do not invent information. Base your answer entirely on the provided text.
 - confidence: 0.0–1.0 (how certain you are in your classification)
-- opportunity_type_guess: scholarship | fellowship | accelerator | incubator | competition | grant | conference | internship | exchange | other
+- opportunity_type_guess: scholarship | fellowship | accelerator | incubator | competition | grant | conference | internship | exchange | course | other
 - reason: one sentence explaining your decision
 
 Return format (strict JSON, no markdown):
