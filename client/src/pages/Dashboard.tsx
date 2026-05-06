@@ -7,13 +7,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const STATUSES_OPTIONS = [
+  { value: "Considering", label: "Considering", color: "bg-purple-100 text-purple-700" },
   { value: "Applied", label: "Applied", color: "bg-blue-100 text-blue-700" },
   { value: "In Progress", label: "In Progress", color: "bg-yellow-100 text-yellow-700" },
   { value: "Accepted", label: "Accepted", color: "bg-green-100 text-green-700" },
   { value: "Rejected", label: "Rejected", color: "bg-red-100 text-red-700" },
+  { value: "One Day", label: "One Day", color: "bg-gray-100 text-gray-600" },
 ] as const;
 
-const STATUSES = ["Applied", "In Progress", "Accepted", "Rejected"] as const;
+const STATUSES = ["Considering", "Applied", "In Progress", "Accepted", "Rejected", "One Day"] as const;
 
 const EMPTY_FORM = { customTitle: "", customOrganizer: "", customLink: "", customDeadline: "", status: "Applied" as const, notes: "" };
 
@@ -91,9 +93,11 @@ export default function Dashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "Considering": return "bg-purple-100 text-purple-700";
       case "Accepted": return "bg-green-100 text-green-700";
       case "Rejected": return "bg-red-100 text-red-700";
       case "In Progress": return "bg-yellow-100 text-yellow-700";
+      case "One Day": return "bg-gray-100 text-gray-600";
       default: return "bg-blue-100 text-blue-700";
     }
   };

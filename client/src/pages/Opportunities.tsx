@@ -9,10 +9,12 @@ import AISearch from "@/components/AISearch";
 import { toast } from "sonner";
 
 const APPLICATION_STATUSES = [
+  { value: "Considering", label: "Considering", description: "Estou pensando em aplicar", color: "bg-purple-100 text-purple-700 border-purple-200" },
   { value: "Applied", label: "Applied", description: "Já me candidatei", color: "bg-blue-100 text-blue-700 border-blue-200" },
   { value: "In Progress", label: "In Progress", description: "Estou preparando a candidatura", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
   { value: "Accepted", label: "Accepted", description: "Fui aceito(a)!", color: "bg-green-100 text-green-700 border-green-200" },
   { value: "Rejected", label: "Rejected", description: "Não fui selecionado(a)", color: "bg-red-100 text-red-700 border-red-200" },
+  { value: "One Day", label: "One Day", description: "Salvar para o futuro", color: "bg-gray-100 text-gray-600 border-gray-200" },
 ] as const;
 
 const OPPORTUNITY_TYPES = ["Scholarship", "Fellowship", "Accelerator", "Incubator", "Competition", "Internship", "Grant", "Conference", "Exchange Program", "Course", "Other"];

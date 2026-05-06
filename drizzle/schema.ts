@@ -53,10 +53,12 @@ export const fundingEnum = pgEnum("funding", [
 export const feeEnum = pgEnum("fee", ["No-fee", "Paid"]);
 
 export const applicationStatusEnum = pgEnum("applicationStatus", [
+  "Considering",
   "Applied",
   "In Progress",
   "Accepted",
   "Rejected",
+  "One Day",
 ]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────

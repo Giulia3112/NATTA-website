@@ -218,7 +218,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         opportunityId: z.number(),
-        status: z.enum(["Applied", "In Progress", "Accepted", "Rejected"]).optional(),
+        status: z.enum(["Considering", "Applied", "In Progress", "Accepted", "Rejected", "One Day"]).optional(),
         notes: z.string().optional(),
         programStartDate: z.date().optional(),
         programEndDate: z.date().optional(),
@@ -240,7 +240,7 @@ export const appRouter = router({
         customOrganizer: z.string().optional(),
         customLink: z.string().url().optional().or(z.literal("")),
         customDeadline: z.date().optional(),
-        status: z.enum(["Applied", "In Progress", "Accepted", "Rejected"]).default("Applied"),
+        status: z.enum(["Considering", "Applied", "In Progress", "Accepted", "Rejected", "One Day"]).default("Applied"),
         notes: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -258,7 +258,7 @@ export const appRouter = router({
     updateStatus: protectedProcedure
       .input(z.object({
         applicationId: z.number(),
-        status: z.enum(["Applied", "In Progress", "Accepted", "Rejected"]),
+        status: z.enum(["Considering", "Applied", "In Progress", "Accepted", "Rejected", "One Day"]),
       }))
       .mutation(async ({ input, ctx }) => {
         return await updateApplicationStatus(input.applicationId, input.status);

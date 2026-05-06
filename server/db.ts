@@ -200,7 +200,7 @@ export async function createApplication(data: {
   customOrganizer?: string;
   customLink?: string;
   customDeadline?: Date;
-  status?: "Applied" | "In Progress" | "Accepted" | "Rejected";
+  status?: "Considering" | "Applied" | "In Progress" | "Accepted" | "Rejected" | "One Day";
   notes?: string;
   programStartDate?: Date;
   programEndDate?: Date;
@@ -227,7 +227,7 @@ export async function createApplication(data: {
 
 export async function updateApplicationStatus(
   id: number,
-  status: "Applied" | "In Progress" | "Accepted" | "Rejected"
+  status: "Considering" | "Applied" | "In Progress" | "Accepted" | "Rejected" | "One Day"
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
