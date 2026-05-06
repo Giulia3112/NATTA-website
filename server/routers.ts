@@ -234,6 +234,27 @@ export const appRouter = router({
         });
       }),
 
+    createCustom: protectedProcedure
+      .input(z.object({
+        customTitle: z.string().min(1),
+        customOrganizer: z.string().optional(),
+        customLink: z.string().url().optional().or(z.literal("")),
+        customDeadline: z.date().optional(),
+        status: z.enum(["Applied", "In Progress", "Accepted", "Rejected"]).default("Applied"),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await createApplication({
+          userId: ctx.user.id,
+          customTitle: input.customTitle,
+          customOrganizer: input.customOrganizer,
+          customLink: input.customLink || undefined,
+          customDeadline: input.customDeadline,
+          status: input.status,
+          notes: input.notes,
+        });
+      }),
+
     updateStatus: protectedProcedure
       .input(z.object({
         applicationId: z.number(),

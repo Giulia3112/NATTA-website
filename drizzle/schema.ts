@@ -114,7 +114,11 @@ export type InsertOpportunity = typeof opportunities.$inferInsert;
 export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
   userId: integer("userId").notNull(),
-  opportunityId: integer("opportunityId").notNull(),
+  opportunityId: integer("opportunityId"),
+  customTitle: varchar("customTitle", { length: 255 }),
+  customOrganizer: varchar("customOrganizer", { length: 255 }),
+  customLink: varchar("customLink", { length: 500 }),
+  customDeadline: timestamp("customDeadline"),
   status: applicationStatusEnum("status").default("Applied").notNull(),
   appliedAt: timestamp("appliedAt").defaultNow().notNull(),
   notes: text("notes"),

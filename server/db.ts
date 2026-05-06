@@ -1,4 +1,4 @@
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -167,9 +167,10 @@ export async function getUserApplicationsWithDetails(userId: number) {
       appliedAt: applications.appliedAt,
       programStartDate: applications.programStartDate,
       programEndDate: applications.programEndDate,
-      title: opportunities.title,
-      organizer: opportunities.organizer,
-      deadline: opportunities.deadline,
+      customLink: applications.customLink,
+      title: sql<string>`COALESCE(${opportunities.title}, ${applications.customTitle})`,
+      organizer: sql<string>`COALESCE(${opportunities.organizer}, ${applications.customOrganizer})`,
+      deadline: sql<Date | null>`COALESCE(${opportunities.deadline}, ${applications.customDeadline})`,
       opportunityType: opportunities.opportunityType,
     })
     .from(applications)
@@ -194,7 +195,11 @@ export async function getApplicationById(id: number) {
 
 export async function createApplication(data: {
   userId: number;
-  opportunityId: number;
+  opportunityId?: number;
+  customTitle?: string;
+  customOrganizer?: string;
+  customLink?: string;
+  customDeadline?: Date;
   status?: "Applied" | "In Progress" | "Accepted" | "Rejected";
   notes?: string;
   programStartDate?: Date;
@@ -207,7 +212,11 @@ export async function createApplication(data: {
     .insert(applications)
     .values({
       userId: data.userId,
-      opportunityId: data.opportunityId,
+      opportunityId: data.opportunityId ?? null,
+      customTitle: data.customTitle,
+      customOrganizer: data.customOrganizer,
+      customLink: data.customLink,
+      customDeadline: data.customDeadline,
       status: data.status ?? "Applied",
       notes: data.notes,
       programStartDate: data.programStartDate,
