@@ -17,7 +17,8 @@ const STATUSES_OPTIONS = [
 
 const STATUSES = ["Considering", "Applied", "In Progress", "Accepted", "Rejected", "One Day"] as const;
 
-const EMPTY_FORM = { customTitle: "", customOrganizer: "", customLink: "", customDeadline: "", status: "Applied" as const, notes: "" };
+type FormStatus = "Considering" | "Applied" | "In Progress" | "Accepted" | "Rejected" | "One Day";
+const EMPTY_FORM = { customTitle: "", customOrganizer: "", customLink: "", customDeadline: "", status: "Applied" as FormStatus, notes: "" };
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, error, logout, serverAuthFailed } = useAuth();
@@ -91,16 +92,58 @@ export default function Dashboard() {
   const getByStatus = (status: string) =>
     applications.filter((app) => app.status === status);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Considering": return "bg-purple-100 text-purple-700";
-      case "Accepted": return "bg-green-100 text-green-700";
-      case "Rejected": return "bg-red-100 text-red-700";
-      case "In Progress": return "bg-yellow-100 text-yellow-700";
-      case "One Day": return "bg-gray-100 text-gray-600";
-      default: return "bg-blue-100 text-blue-700";
-    }
+  const STATUS_THEME: Record<string, { column: string; card: string; border: string; dot: string; text: string; header: string }> = {
+    "Considering": {
+      column: "bg-purple-50 border-purple-200",
+      card: "border-l-4 border-l-purple-400 bg-white hover:shadow-purple-100",
+      border: "border border-purple-100",
+      dot: "bg-purple-400",
+      text: "text-purple-700",
+      header: "text-purple-700",
+    },
+    "Applied": {
+      column: "bg-blue-50 border-blue-200",
+      card: "border-l-4 border-l-blue-400 bg-white hover:shadow-blue-100",
+      border: "border border-blue-100",
+      dot: "bg-blue-400",
+      text: "text-blue-700",
+      header: "text-blue-700",
+    },
+    "In Progress": {
+      column: "bg-yellow-50 border-yellow-200",
+      card: "border-l-4 border-l-yellow-400 bg-white hover:shadow-yellow-100",
+      border: "border border-yellow-100",
+      dot: "bg-yellow-400",
+      text: "text-yellow-700",
+      header: "text-yellow-700",
+    },
+    "Accepted": {
+      column: "bg-green-50 border-green-200",
+      card: "border-l-4 border-l-green-400 bg-white hover:shadow-green-100",
+      border: "border border-green-100",
+      dot: "bg-green-400",
+      text: "text-green-700",
+      header: "text-green-700",
+    },
+    "Rejected": {
+      column: "bg-red-50 border-red-200",
+      card: "border-l-4 border-l-red-400 bg-white hover:shadow-red-100",
+      border: "border border-red-100",
+      dot: "bg-red-400",
+      text: "text-red-700",
+      header: "text-red-700",
+    },
+    "One Day": {
+      column: "bg-gray-50 border-gray-200",
+      card: "border-l-4 border-l-gray-400 bg-white hover:shadow-gray-100",
+      border: "border border-gray-100",
+      dot: "bg-gray-400",
+      text: "text-gray-500",
+      header: "text-gray-600",
+    },
   };
+
+  const getStatusColor = (status: string) => STATUS_THEME[status] ?? STATUS_THEME["Applied"];
 
   const acceptedWithDates = applications.filter(
     (a) => a.status === "Accepted" && a.programStartDate && a.programEndDate
@@ -202,25 +245,32 @@ export default function Dashboard() {
 
         {/* Kanban View */}
         {!applicationsQuery.isLoading && viewMode === "kanban" && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {STATUSES.map((status) => (
-              <div key={status} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-bold text-lg mb-4 text-gray-900">
-                  {status}
-                  <span className="ml-2 text-sm text-gray-500">({getByStatus(status).length})</span>
-                </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+            {STATUSES.map((status) => {
+              const theme = STATUS_THEME[status] ?? STATUS_THEME["Applied"];
+              return (
+              <div key={status} className={`rounded-xl p-4 border ${theme.column}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${theme.dot}`} />
+                  <h3 className={`font-bold text-base ${theme.header}`}>
+                    {status}
+                  </h3>
+                  <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${theme.dot.replace("bg-", "bg-").replace("-400", "-100")} ${theme.text}`}>
+                    {getByStatus(status).length}
+                  </span>
+                </div>
                 <div className="space-y-3">
                   {getByStatus(status).map((app) => (
-                    <div key={app.id} className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-300 ease-in-out">
+                    <div key={app.id} className={`rounded-lg p-4 ${theme.card} ${theme.border} hover:shadow-md transition-all duration-300 ease-in-out`}>
                       <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2">{app.title ?? "Sem título"}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{app.organizer ?? "—"}</p>
+                      <p className="text-sm text-gray-500 mb-2">{app.organizer ?? "—"}</p>
                       {app.deadline && (
-                        <div className="text-xs text-gray-500 mb-2">
+                        <div className={`text-xs mb-2 font-medium ${theme.text}`}>
                           Prazo: {new Date(app.deadline).toLocaleDateString("pt-BR")}
                         </div>
                       )}
                       {app.notes && (
-                        <p className="text-xs text-gray-500 mb-3 italic line-clamp-2">&quot;{app.notes}&quot;</p>
+                        <p className="text-xs text-gray-400 mb-3 italic line-clamp-2">&quot;{app.notes}&quot;</p>
                       )}
                       <div className="flex gap-2 items-center">
                         <select
@@ -231,7 +281,7 @@ export default function Dashboard() {
                               status: e.target.value as typeof STATUSES[number],
                             })
                           }
-                          className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:ring-2 focus:ring-blue-500"
                         >
                           {STATUSES.map((s) => (
                             <option key={s} value={s}>{s}</option>
@@ -264,7 +314,8 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -407,7 +458,7 @@ export default function Dashboard() {
                     <button
                       key={s.value}
                       type="button"
-                      onClick={() => setForm({ ...form, status: s.value })}
+                      onClick={() => setForm({ ...form, status: s.value as FormStatus })}
                       className={`px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
                         form.status === s.value
                           ? s.color + " border-current"
