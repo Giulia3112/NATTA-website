@@ -115,10 +115,32 @@ export default function Opportunities() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="container py-4">
+        <div className="container py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <img src="/natta-logo.png" alt="NATTA" className="h-8" />
           </Link>
+          {user && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500 hidden sm:block">Olá, {user.name?.split(" ")[0]}!</span>
+              <Link href="/dashboard">
+                <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/profile">
+                <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                  Perfil
+                </Button>
+              </Link>
+            </div>
+          )}
+          {!user && (
+            <Link href="/login">
+              <Button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                Entrar
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
