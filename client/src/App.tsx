@@ -4,6 +4,8 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import LanguageToggle from "./components/LanguageToggle";
+import "./i18n";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminScraper from "./pages/AdminScraper";
@@ -80,6 +82,10 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          {/* Floating language toggle — visible on all pages */}
+          <div className="fixed bottom-5 right-5 z-50">
+            <LanguageToggle />
+          </div>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

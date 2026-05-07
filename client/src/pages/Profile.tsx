@@ -6,24 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Heart, LogOut, Save, X, Check, Bot, Sparkles, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const INTEREST_TAGS = [
-  "Tech",
-  "Business",
-  "Climate",
-  "Social Impact",
-  "Health",
-  "Policy",
-  "Design",
-  "Engineering",
-  "Finance",
-  "Education",
-  "Agriculture",
-  "Energy",
-  "Transportation",
-  "AI/ML",
-  "Blockchain",
-  "Sustainability",
+  "Tech", "Business", "Climate", "Social Impact", "Health", "Policy",
+  "Design", "Engineering", "Finance", "Education", "Agriculture", "Energy",
+  "Transportation", "AI/ML", "Blockchain", "Sustainability",
 ];
 
 interface UserProfile {
@@ -43,16 +31,17 @@ export default function Profile() {
     interests: (user?.interests as string[]) || [],
   });
   const [savedMessage, setSavedMessage] = useState(false);
+  const { t } = useTranslation();
 
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("Profile updated successfully!");
+      toast.success(t("profile.profileUpdated"));
       setSavedMessage(true);
       setIsEditing(false);
       setTimeout(() => setSavedMessage(false), 3000);
     },
     onError: (error) => {
-      toast.error("Failed to update profile: " + error.message);
+      toast.error(t("profile.failedUpdate") + error.message);
     },
   });
 
@@ -60,7 +49,6 @@ export default function Profile() {
     enabled: isAuthenticated,
   });
 
-  // Update profile state when user data changes
   useEffect(() => {
     if (user) {
       setProfile({
@@ -84,11 +72,11 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Access Restricted</h1>
-          <p className="text-gray-600 mb-6">You need to be authenticated to access your profile.</p>
+          <h1 className="text-3xl font-bold mb-4">{t("profile.accessRestricted")}</h1>
+          <p className="text-gray-600 mb-6">{t("profile.needAuth")}</p>
           <Link href="/login">
             <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Fazer Login
+              {t("profile.loginBtn")}
             </Button>
           </Link>
         </div>
@@ -112,13 +100,7 @@ export default function Profile() {
     }));
   };
 
-  const stats = applicationStats || {
-    total: 0,
-    applied: 0,
-    inProgress: 0,
-    accepted: 0,
-    rejected: 0,
-  };
+  const stats = applicationStats || { total: 0, applied: 0, inProgress: 0, accepted: 0, rejected: 0 };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -130,15 +112,15 @@ export default function Profile() {
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
-              Dashboard
+              {t("nav.dashboard")}
             </Link>
             {user?.role === 'admin' && user?.email === 'alvaresgiulia@gmail.com' && (
               <>
                 <Link href="/admin/scraper" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
-                  Scraper
+                  {t("nav.scraper")}
                 </Link>
                 <Link href="/admin/users" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
-                  Users
+                  {t("nav.users")}
                 </Link>
               </>
             )}
@@ -147,7 +129,7 @@ export default function Profile() {
               className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all duration-300 ease-in-out flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              Sign Out
+              {t("profile.signOut")}
             </button>
           </div>
         </div>
@@ -167,24 +149,22 @@ export default function Profile() {
                   onClick={() => setIsEditing(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 ease-in-out"
                 >
-                  Edit Profile
+                  {t("profile.editProfile")}
                 </button>
               )}
             </div>
 
-            {/* Success Message */}
             {savedMessage && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-600" />
-                <span className="text-green-700 font-medium">Profile updated successfully!</span>
+                <span className="text-green-700 font-medium">{t("profile.profileUpdated")}</span>
               </div>
             )}
 
-            {/* Edit Mode */}
             {isEditing ? (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name</label>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t("profile.fullName")}</label>
                   <Input
                     type="text"
                     value={profile.name}
@@ -194,7 +174,7 @@ export default function Profile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Email</label>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t("profile.email")}</label>
                   <Input
                     type="email"
                     value={profile.email}
@@ -204,19 +184,19 @@ export default function Profile() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Bio</label>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">{t("profile.bioLabel")}</label>
                   <textarea
                     value={profile.bio}
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                     rows={4}
-                    placeholder="Tell us about yourself and what you're looking for..."
+                    placeholder={t("profile.bioPlaceholder")}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">Your Interests</label>
-                  <p className="text-sm text-gray-600 mb-4">Select the areas that interest you. We'll use this to send you personalized opportunities.</p>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">{t("profile.interestsLabel")}</label>
+                  <p className="text-sm text-gray-600 mb-4">{t("profile.interestsDesc")}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {INTEREST_TAGS.map((tag) => (
                       <button
@@ -240,29 +220,29 @@ export default function Profile() {
                     className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 font-semibold"
                   >
                     <Save className="w-5 h-5" />
-                    Save Changes
+                    {t("profile.saveChanges")}
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
                     className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-300 ease-in-out flex items-center justify-center gap-2 font-semibold"
                   >
                     <X className="w-5 h-5" />
-                    Cancel
+                    {t("profile.cancel")}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600 font-semibold">Bio</p>
+                  <p className="text-sm text-gray-600 font-semibold">{t("profile.bioLabel")}</p>
                   {profile.bio ? (
                     <p className="text-gray-900 mt-1">{profile.bio}</p>
                   ) : (
-                    <p className="text-gray-400 mt-1 italic">Conta um pouco sobre você, seus objetivos e o que você está buscando — clique em Editar para começar.</p>
+                    <p className="text-gray-400 mt-1 italic">{t("profile.bioEmpty")}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-semibold mb-2">Your Interests</p>
+                  <p className="text-sm text-gray-600 font-semibold mb-2">{t("profile.interestsLabel")}</p>
                   <div className="flex flex-wrap gap-2">
                     {profile.interests.map((interest) => (
                       <span key={interest} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
@@ -280,17 +260,17 @@ export default function Profile() {
             <div className="flex items-start gap-4">
               <Heart className="w-8 h-8 text-blue-600 flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">A Message from Our Founder</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">{t("profile.founderTitle")}</h2>
                 <p className="text-gray-800 leading-relaxed mb-4">
-                  Hi {profile.name}! I'm the CEO and founder of NATTA, and I'm actively using this platform just like you. I personally review user profiles and send curated opportunities based on your interests and background.
+                  {t("profile.founderBody1", { name: profile.name })}
                 </p>
                 <p className="text-gray-800 leading-relaxed mb-4">
-                  Your interests in <strong>{profile.interests.join(", ")}</strong> are exactly what I look for when matching candidates with opportunities. The more detailed your profile, the better I can find the perfect fit for you.
+                  {t("profile.founderBody2", { interests: profile.interests.join(", ") })}
                 </p>
                 <p className="text-gray-800 leading-relaxed">
-                  Keep your profile updated, and watch for personalized opportunities from me. I'm committed to helping ambitious candidates like you discover life-changing opportunities around the world.
+                  {t("profile.founderBody3")}
                 </p>
-                <p className="text-gray-700 font-semibold mt-4">— The NATTA Team</p>
+                <p className="text-gray-700 font-semibold mt-4">{t("profile.founderSignature")}</p>
               </div>
             </div>
           </div>
@@ -302,26 +282,24 @@ export default function Profile() {
                 <Bot className="w-8 h-8 text-purple-600 flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-3">
-                    <h2 className="text-2xl font-bold text-gray-900">AI Scraper Admin</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">{t("profile.adminTitle")}</h2>
                     <span className="px-3 py-1 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      AUTHORIZED
+                      {t("profile.adminAuthorized")}
                     </span>
                   </div>
-                  <p className="text-gray-800 leading-relaxed mb-4">
-                    You have exclusive access to the AI-powered opportunity scraper. Automatically discover and collect opportunities from 8 trusted sources worldwide.
-                  </p>
+                  <p className="text-gray-800 leading-relaxed mb-4">{t("profile.adminBody")}</p>
                   <div className="flex gap-4">
                     <Link href="/admin/scraper">
                       <Button className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-300 ease-in-out flex items-center gap-2 font-semibold">
                         <Bot className="w-5 h-5" />
-                        Open AI Scraper Dashboard
+                        {t("profile.openScraper")}
                       </Button>
                     </Link>
                     <Link href="/admin/add-opportunity">
                       <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 ease-in-out flex items-center gap-2 font-semibold">
                         <Plus className="w-5 h-5" />
-                        Add Opportunity Manually
+                        {t("profile.addManually")}
                       </Button>
                     </Link>
                   </div>
@@ -332,27 +310,27 @@ export default function Profile() {
 
           {/* Statistics */}
           <div className="bg-white rounded-xl border border-gray-200 p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Your Application Statistics</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">{t("profile.statsTitle")}</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-                <p className="text-sm text-gray-600 mt-1">Total Applications</p>
+                <p className="text-sm text-gray-600 mt-1">{t("profile.statsTotal")}</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <p className="text-3xl font-bold text-gray-600">{stats.applied}</p>
-                <p className="text-sm text-gray-600 mt-1">Applied</p>
+                <p className="text-sm text-gray-600 mt-1">{t("profile.statsApplied")}</p>
               </div>
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <p className="text-3xl font-bold text-yellow-600">{stats.inProgress}</p>
-                <p className="text-sm text-gray-600 mt-1">In Progress</p>
+                <p className="text-sm text-gray-600 mt-1">{t("profile.statsInProgress")}</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <p className="text-3xl font-bold text-green-600">{stats.accepted}</p>
-                <p className="text-sm text-gray-600 mt-1">Accepted</p>
+                <p className="text-sm text-gray-600 mt-1">{t("profile.statsAccepted")}</p>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">
                 <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
-                <p className="text-sm text-gray-600 mt-1">Rejected</p>
+                <p className="text-sm text-gray-600 mt-1">{t("profile.statsRejected")}</p>
               </div>
             </div>
           </div>

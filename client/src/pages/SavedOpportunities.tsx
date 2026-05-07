@@ -4,10 +4,12 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Heart, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function SavedOpportunities() {
   const { user, isAuthenticated, loading } = useAuth();
   const { savedIds, toggleSaved } = useSavedOpportunities();
+  const { t } = useTranslation();
 
   const opportunitiesQuery = trpc.opportunities.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -29,18 +31,17 @@ export default function SavedOpportunities() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Access Restricted</h1>
-          <p className="text-gray-600 mb-6">You need to be authenticated to access saved opportunities.</p>
+          <h1 className="text-3xl font-bold mb-4">{t("saved.accessRestricted")}</h1>
+          <p className="text-gray-600 mb-6">{t("saved.needAuth")}</p>
           <Link href="/login">
             <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Fazer Login
+              {t("saved.loginBtn")}
             </Button>
           </Link>
         </div>
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -52,14 +53,14 @@ export default function SavedOpportunities() {
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/opportunities" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
-              Opportunities
+              {t("nav.opportunities")}
             </Link>
             <Link href="/dashboard" className="text-gray-600 hover:text-blue-600 transition-all duration-300 ease-in-out">
-              Dashboard
+              {t("nav.dashboard")}
             </Link>
             <Link href="/profile">
               <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                Profile
+                {t("nav.profile")}
               </Button>
             </Link>
           </div>
@@ -71,10 +72,12 @@ export default function SavedOpportunities() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Heart className="w-8 h-8 text-red-600 fill-red-600" />
-            <h1 className="text-4xl font-bold text-gray-900">Saved Opportunities</h1>
+            <h1 className="text-4xl font-bold text-gray-900">{t("saved.title")}</h1>
           </div>
           <p className="text-gray-600">
-            {savedOpportunities.length} {savedOpportunities.length === 1 ? "opportunity" : "opportunities"} saved
+            {savedOpportunities.length === 1
+              ? t("saved.countOne", { count: savedOpportunities.length })
+              : t("saved.countOther", { count: savedOpportunities.length })}
           </p>
         </div>
 
@@ -82,13 +85,11 @@ export default function SavedOpportunities() {
         {savedOpportunities.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Saved Opportunities Yet</h2>
-            <p className="text-gray-600 mb-6">
-              Start exploring opportunities and save your favorites for later. Click the heart icon to save any opportunity.
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("saved.emptyTitle")}</h2>
+            <p className="text-gray-600 mb-6">{t("saved.emptyBody")}</p>
             <Link href="/opportunities">
               <Button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2">
-                Explore Opportunities
+                {t("saved.exploreBtn")}
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -125,13 +126,16 @@ export default function SavedOpportunities() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    <strong>Region:</strong> {opportunity.region}
+                    <strong>{t("saved.region")}</strong> {opportunity.region}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <strong>Deadline:</strong> {opportunity.deadline ? new Date(opportunity.deadline).toLocaleDateString("en-US") : "Rolling Basis"}
+                    <strong>{t("saved.deadline")}</strong>{" "}
+                    {opportunity.deadline
+                      ? new Date(opportunity.deadline).toLocaleDateString()
+                      : t("saved.rollingBasis")}
                   </p>
                   <p className="text-sm text-gray-600">
-                    <strong>Funding:</strong> {opportunity.fundingType}
+                    <strong>{t("saved.funding")}</strong> {opportunity.fundingType}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {opportunity.tags.slice(0, 3).map((tag: string) => (
@@ -150,7 +154,7 @@ export default function SavedOpportunities() {
                 {/* CTA */}
                 <Link href="/dashboard">
                   <Button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all duration-300 ease-in-out">
-                    Apply Now
+                    {t("saved.applyNow")}
                   </Button>
                 </Link>
               </div>

@@ -14,10 +14,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Spinner } from "@/components/ui/spinner";
+import { useTranslation } from "react-i18next";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -26,7 +28,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Only redirect after the SERVER confirms authentication
   if (!authLoading && isAuthenticated) {
     setLocation("/dashboard");
     return null;
@@ -40,7 +41,7 @@ export default function Login() {
       await signInWithPopup(firebaseAuth, provider);
       setLocation("/dashboard");
     } catch (err: any) {
-      setError(getErrorMessage(err.code));
+      setError(getErrorMessage(err.code, t));
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ export default function Login() {
       }
       setLocation("/dashboard");
     } catch (err: any) {
-      setError(getErrorMessage(err.code));
+      setError(getErrorMessage(err.code, t));
     } finally {
       setLoading(false);
     }
@@ -76,20 +77,16 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight">NATTA</h1>
-        <p className="text-muted-foreground mt-1">
-          Descubra e gerencie suas oportunidades
-        </p>
+        <p className="text-muted-foreground mt-1">{t("login.tagline")}</p>
       </div>
 
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>
-            {mode === "signin" ? "Entrar na conta" : "Criar conta"}
+            {mode === "signin" ? t("login.signInTitle") : t("login.signUpTitle")}
           </CardTitle>
           <CardDescription>
-            {mode === "signin"
-              ? "Acesse sua conta para continuar"
-              : "Crie sua conta gratuitamente"}
+            {mode === "signin" ? t("login.signInDescription") : t("login.signUpDescription")}
           </CardDescription>
         </CardHeader>
 
@@ -102,12 +99,12 @@ export default function Login() {
             disabled={loading}
           >
             <GoogleIcon />
-            Continuar com Google
+            {t("login.continueWithGoogle")}
           </Button>
 
           <div className="flex items-center gap-3">
             <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">ou</span>
+            <span className="text-xs text-muted-foreground">{t("login.or")}</span>
             <Separator className="flex-1" />
           </div>
 
@@ -115,10 +112,10 @@ export default function Login() {
           <form onSubmit={handleEmailAuth} className="space-y-3">
             {mode === "signup" && (
               <div className="space-y-1">
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name">{t("login.name")}</Label>
                 <Input
                   id="name"
-                  placeholder="Seu nome"
+                  placeholder={t("login.namePlaceholder")}
                   value={name}
                   onChange={e => setName(e.target.value)}
                   disabled={loading}
@@ -127,11 +124,11 @@ export default function Login() {
             )}
 
             <div className="space-y-1">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder={t("login.emailPlaceholder")}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -140,11 +137,11 @@ export default function Login() {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder={mode === "signup" ? "Mínimo 6 caracteres" : "Sua senha"}
+                placeholder={mode === "signup" ? t("login.passwordSignUp") : t("login.passwordSignIn")}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -157,34 +154,32 @@ export default function Login() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <Spinner className="mr-2 h-4 w-4" />
-              ) : null}
-              {mode === "signin" ? "Entrar" : "Criar conta"}
+              {loading ? <Spinner className="mr-2 h-4 w-4" /> : null}
+              {mode === "signin" ? t("login.signInBtn") : t("login.signUpBtn")}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
             {mode === "signin" ? (
               <>
-                Não tem conta?{" "}
+                {t("login.noAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => { setMode("signup"); setError(null); }}
                   className="text-primary font-medium hover:underline"
                 >
-                  Criar conta
+                  {t("login.createAccount")}
                 </button>
               </>
             ) : (
               <>
-                Já tem conta?{" "}
+                {t("login.hasAccount")}{" "}
                 <button
                   type="button"
                   onClick={() => { setMode("signin"); setError(null); }}
                   className="text-primary font-medium hover:underline"
                 >
-                  Entrar
+                  {t("login.signIn")}
                 </button>
               </>
             )}
@@ -206,25 +201,25 @@ function GoogleIcon() {
   );
 }
 
-function getErrorMessage(code: string): string {
+function getErrorMessage(code: string, t: (key: string) => string): string {
   switch (code) {
     case "auth/user-not-found":
     case "auth/wrong-password":
     case "auth/invalid-credential":
-      return "Email ou senha incorretos.";
+      return t("login.errors.invalidCredential");
     case "auth/email-already-in-use":
-      return "Este email já está cadastrado.";
+      return t("login.errors.emailInUse");
     case "auth/weak-password":
-      return "A senha deve ter pelo menos 6 caracteres.";
+      return t("login.errors.weakPassword");
     case "auth/invalid-email":
-      return "Email inválido.";
+      return t("login.errors.invalidEmail");
     case "auth/too-many-requests":
-      return "Muitas tentativas. Tente novamente mais tarde.";
+      return t("login.errors.tooManyRequests");
     case "auth/popup-closed-by-user":
-      return "Login cancelado.";
+      return t("login.errors.popupClosed");
     case "auth/network-request-failed":
-      return "Erro de conexão. Verifique sua internet.";
+      return t("login.errors.networkError");
     default:
-      return "Ocorreu um erro. Tente novamente.";
+      return t("login.errors.generic");
   }
 }

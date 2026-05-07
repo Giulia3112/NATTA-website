@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Search, ExternalLink, ChevronDown, ChevronUp, Globe, X, Calendar, MapPin, DollarSign } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface WebSnippet {
   title: string;
@@ -39,6 +40,7 @@ export default function AISearch() {
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [expandedWeb, setExpandedWeb] = useState<Set<number>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useTranslation();
 
   const searchMutation = trpc.opportunities.aiSearch.useMutation({
     onSuccess: (data) => setResult(data as AiResult),
@@ -85,8 +87,8 @@ export default function AISearch() {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 shadow-lg">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-yellow-300" />
-          <span className="text-white font-semibold text-lg">Busca por IA</span>
-          <span className="text-blue-200 text-sm ml-1">— descreva o que você procura</span>
+          <span className="text-white font-semibold text-lg">{t("aiSearch.title")}</span>
+          <span className="text-blue-200 text-sm ml-1">{t("aiSearch.subtitle")}</span>
         </div>
 
         <div className="relative">
@@ -96,23 +98,18 @@ export default function AISearch() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={2}
-            placeholder="Ex: Quero uma bolsa de pesquisa em IA para pós-graduação na Europa, sem taxa..."
+            placeholder={t("aiSearch.placeholder")}
             className="w-full px-4 py-3 pr-12 rounded-xl border-0 bg-white/95 text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 text-sm leading-relaxed"
           />
           {query && (
-            <button
-              onClick={clear}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={clear} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         <div className="flex items-center justify-between mt-3">
-          <p className="text-blue-200 text-xs">
-            Enter para buscar · Shift+Enter para nova linha
-          </p>
+          <p className="text-blue-200 text-xs">{t("aiSearch.hint")}</p>
           <Button
             onClick={handleSearch}
             disabled={searchMutation.isPending || query.trim().length < 3}
@@ -121,12 +118,12 @@ export default function AISearch() {
             {searchMutation.isPending ? (
               <>
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                Buscando...
+                {t("aiSearch.searching")}
               </>
             ) : (
               <>
                 <Search className="w-4 h-4" />
-                Buscar
+                {t("aiSearch.searchBtn")}
               </>
             )}
           </Button>
@@ -138,10 +135,11 @@ export default function AISearch() {
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-8 text-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-600 font-medium">A IA está analisando {" "}
-              <span className="text-blue-600">todas as oportunidades</span>...
+            <p className="text-gray-600 font-medium">
+              {t("aiSearch.loadingPre")}
+              <span className="text-blue-600">{t("aiSearch.loadingHighlight")}</span>...
             </p>
-            <p className="text-gray-400 text-sm">Tenha um pouco de paciência, estamos pareando as oportunidades da NATTA com seus dados na web.</p>
+            <p className="text-gray-400 text-sm">{t("aiSearch.loadingBody")}</p>
           </div>
         </div>
       )}
@@ -149,8 +147,8 @@ export default function AISearch() {
       {/* Error */}
       {searchMutation.isError && (
         <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm space-y-1">
-          <p className="font-semibold">Erro ao processar a busca</p>
-          <p className="text-red-600">{searchMutation.error?.message ?? "Erro desconhecido."}</p>
+          <p className="font-semibold">{t("aiSearch.errorTitle")}</p>
+          <p className="text-red-600">{searchMutation.error?.message ?? t("aiSearch.errorUnknown")}</p>
         </div>
       )}
 
@@ -163,12 +161,16 @@ export default function AISearch() {
             <div className="flex-1">
               <p className="text-blue-900 text-sm leading-relaxed">{result.summary}</p>
               <div className="flex items-center gap-3 mt-2 text-xs text-blue-600">
-                <span>{result.matches.length} oportunidade{result.matches.length !== 1 ? "s" : ""} encontrada{result.matches.length !== 1 ? "s" : ""}</span>
+                <span>
+                  {result.matches.length === 1
+                    ? t("aiSearch.foundOne", { count: result.matches.length })
+                    : t("aiSearch.foundOther", { count: result.matches.length })}
+                </span>
                 {result.webSearched && (
                   <>
                     <span>·</span>
                     <span className="flex items-center gap-1">
-                      <Globe className="w-3 h-3" /> Enriquecido com busca web
+                      <Globe className="w-3 h-3" /> {t("aiSearch.webEnriched")}
                     </span>
                   </>
                 )}
@@ -181,15 +183,10 @@ export default function AISearch() {
 
           {/* Match Cards */}
           {result.matches.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Nenhuma oportunidade encontrada para esta busca. Tente descrever de outra forma.
-            </div>
+            <div className="text-center py-8 text-gray-500">{t("aiSearch.noResults")}</div>
           ) : (
             result.matches.map((match, idx) => (
-              <div
-                key={match.id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-              >
+              <div key={match.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {/* Card Header */}
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -217,7 +214,7 @@ export default function AISearch() {
                   <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                      {match.deadline ? new Date(match.deadline).toLocaleDateString("pt-BR") : "Prazo contínuo"}
+                      {match.deadline ? new Date(match.deadline).toLocaleDateString() : t("aiSearch.rollingBasis")}
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-blue-500" />
@@ -230,7 +227,7 @@ export default function AISearch() {
                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{match.stage}</span>
                   </div>
 
-                  {/* Description + Read more */}
+                  {/* Description */}
                   {match.description && (
                     <div className="mb-3">
                       <p className={`text-gray-600 text-sm leading-relaxed ${!expandedCards.has(match.id) ? "line-clamp-2" : ""}`}>
@@ -241,13 +238,15 @@ export default function AISearch() {
                           onClick={() => toggleCard(match.id)}
                           className="text-blue-600 text-xs font-medium mt-1 hover:text-blue-700 flex items-center gap-0.5"
                         >
-                          {expandedCards.has(match.id) ? <><ChevronUp className="w-3 h-3" /> Ler menos</> : <><ChevronDown className="w-3 h-3" /> Ler mais</>}
+                          {expandedCards.has(match.id)
+                            ? <><ChevronUp className="w-3 h-3" /> {t("aiSearch.readLess")}</>
+                            : <><ChevronDown className="w-3 h-3" /> {t("aiSearch.readMore")}</>}
                         </button>
                       )}
                     </div>
                   )}
 
-                  {/* Fields Tags */}
+                  {/* Fields */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {match.fields.slice(0, 4).map((f) => (
                       <span key={f} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{f}</span>
@@ -260,12 +259,12 @@ export default function AISearch() {
                       <a href={match.applicationLink} target="_blank" rel="noopener noreferrer" className="flex-1">
                         <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded-lg flex items-center justify-center gap-2">
                           <ExternalLink className="w-4 h-4" />
-                          Visitar Site
+                          {t("aiSearch.visitSite")}
                         </Button>
                       </a>
                     ) : (
                       <Button disabled className="flex-1 bg-gray-100 text-gray-400 text-sm rounded-lg cursor-not-allowed">
-                        Link indisponível
+                        {t("aiSearch.linkUnavailable")}
                       </Button>
                     )}
                   </div>
@@ -280,7 +279,7 @@ export default function AISearch() {
                     >
                       <Globe className="w-3.5 h-3.5 text-green-500" />
                       <span className="font-medium text-gray-600">
-                        {expandedWeb.has(match.id) ? "Ocultar" : "Ver"} resultados da web ({match.webSnippets.length})
+                        {expandedWeb.has(match.id) ? t("aiSearch.hideWeb") : t("aiSearch.showWeb")} {t("aiSearch.webResults")} ({match.webSnippets.length})
                       </span>
                       {expandedWeb.has(match.id) ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
                     </button>

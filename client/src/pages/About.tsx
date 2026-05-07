@@ -1,7 +1,10 @@
 import { Link } from "wouter";
-import { Globe, Users, Zap, Heart } from "lucide-react";
+import { Globe, Users, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function About() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
@@ -17,48 +20,46 @@ export default function About() {
         {/* Hero */}
         <div className="max-w-3xl mx-auto mb-16">
           <h1 className="text-5xl font-bold mb-6 text-gray-900">
-            About <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">NATTA</span>
+            {t("about.title")}{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              {t("about.titleHighlight")}
+            </span>
           </h1>
           <p className="text-xl text-gray-600 leading-relaxed">
-            NATTA is more than a search tool. It's more than an application manager. <strong>NATTA is the platform that believes in you.</strong>
+            {t("about.introPart1")}
+            <strong>{t("about.introBold")}</strong>
           </p>
         </div>
 
         {/* Mission Section */}
         <div className="grid md:grid-cols-2 gap-12 mb-16 items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-6 text-gray-900">Our Mission</h2>
-            <p className="text-lg text-gray-600 mb-4">
-              Transform overlooked talent into competitive candidates. We believe geography should not determine your opportunities.
-            </p>
-            <p className="text-lg text-gray-600 mb-4">
-              We built NATTA for emerging markets — especially Brazil, India, Africa, and underserved Asia — because we know extraordinary talent exists everywhere.
-            </p>
-            <p className="text-lg text-gray-600">
-              Our goal is to expand access to top global opportunities by removing barriers to discovery and management.
-            </p>
+            <h2 className="text-3xl font-bold mb-6 text-gray-900">{t("about.missionTitle")}</h2>
+            <p className="text-lg text-gray-600 mb-4">{t("about.missionP1")}</p>
+            <p className="text-lg text-gray-600 mb-4">{t("about.missionP2")}</p>
+            <p className="text-lg text-gray-600">{t("about.missionP3")}</p>
           </div>
           <div className="bg-white rounded-xl p-8 border border-gray-200">
             <div className="space-y-6">
               <div className="flex gap-4">
                 <Globe className="w-8 h-8 text-blue-600 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Global, Accessible</h3>
-                  <p className="text-gray-600">Opportunities from around the world, in one place</p>
+                  <h3 className="font-bold text-lg mb-2">{t("about.globalTitle")}</h3>
+                  <p className="text-gray-600">{t("about.globalBody")}</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <Users className="w-8 h-8 text-blue-600 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Built for You</h3>
-                  <p className="text-gray-600">Designed for emerging market candidates</p>
+                  <h3 className="font-bold text-lg mb-2">{t("about.builtTitle")}</h3>
+                  <p className="text-gray-600">{t("about.builtBody")}</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <Zap className="w-8 h-8 text-blue-600 flex-shrink-0" />
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Smart</h3>
-                  <p className="text-gray-600">AI-powered discovery and smarter management</p>
+                  <h3 className="font-bold text-lg mb-2">{t("about.smartTitle")}</h3>
+                  <p className="text-gray-600">{t("about.smartBody")}</p>
                 </div>
               </div>
             </div>
@@ -67,21 +68,21 @@ export default function About() {
 
         {/* The Problem */}
         <div className="bg-white rounded-xl p-12 border border-gray-200 mb-16">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">The Problem</h2>
+          <h2 className="text-3xl font-bold mb-6 text-gray-900">{t("about.problemTitle")}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <p className="text-gray-600 mb-4">
-                <strong>Fragmented Discovery:</strong> Opportunities are scattered across dozens of different platforms. You spend hours searching.
+                <strong>{t("about.fragmentedTitle")}</strong> {t("about.fragmentedBody")}
               </p>
             </div>
             <div>
               <p className="text-gray-600 mb-4">
-                <strong>Chaotic Management:</strong> Spreadsheets, emails, notes. No clear view of your deadlines and status.
+                <strong>{t("about.chaoticTitle")}</strong> {t("about.chaoticBody")}
               </p>
             </div>
             <div>
               <p className="text-gray-600 mb-4">
-                <strong>Invisible Conflicts:</strong> You accept two overlapping opportunities. Nobody warns you.
+                <strong>{t("about.invisibleTitle")}</strong> {t("about.invisibleBody")}
               </p>
             </div>
           </div>
@@ -89,122 +90,90 @@ export default function About() {
 
         {/* The Solution */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-gray-900">Our Solution</h2>
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{t("about.solutionTitle")}</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-8 border border-blue-200">
-              <h3 className="text-xl font-bold mb-4 text-gray-900">Discovery</h3>
-              <p className="text-gray-600">
-                Search 15,000+ opportunities with advanced filters. Find exactly what you're looking for in seconds.
-              </p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">{t("about.discoveryTitle")}</h3>
+              <p className="text-gray-600">{t("about.discoveryBody")}</p>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-8 border border-blue-200">
-              <h3 className="text-xl font-bold mb-4 text-gray-900">Management</h3>
-              <p className="text-gray-600">
-                Organize your applications in an intuitive Kanban. Track documents, notes, and status in one place.
-              </p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">{t("about.managementTitle")}</h3>
+              <p className="text-gray-600">{t("about.managementBody")}</p>
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-8 border border-blue-200">
-              <h3 className="text-xl font-bold mb-4 text-gray-900">Protection</h3>
-              <p className="text-gray-600">
-                Smart calendar with automatic conflict detection. Never accept two overlapping opportunities again.
-              </p>
+              <h3 className="text-xl font-bold mb-4 text-gray-900">{t("about.protectionTitle")}</h3>
+              <p className="text-gray-600">{t("about.protectionBody")}</p>
             </div>
           </div>
         </div>
 
         {/* What is a Competitive Candidate */}
         <div className="bg-blue-50 rounded-xl p-12 border border-blue-200 mb-16">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">What is a Competitive Candidate?</h2>
+          <h2 className="text-3xl font-bold mb-6 text-gray-900">{t("about.competitiveTitle")}</h2>
           <p className="text-lg text-gray-600 mb-6">
-            It's not just having a good resume. It's being <strong>strategically positioned</strong> for the opportunities that matter.
+            {t("about.competitiveIntroPart1")}
+            <strong>{t("about.competitiveIntroBold")}</strong>
+            {t("about.competitiveIntroPart2")}
           </p>
           <ul className="space-y-4">
-            <li className="flex gap-4">
-              <span className="text-blue-600 font-bold">✓</span>
-              <span className="text-gray-600">Knows the right opportunities for your profile</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-blue-600 font-bold">✓</span>
-              <span className="text-gray-600">Manages your deadlines and applications with precision</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-blue-600 font-bold">✓</span>
-              <span className="text-gray-600">Avoids conflicts and makes informed decisions</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-blue-600 font-bold">✓</span>
-              <span className="text-gray-600">Maximizes your chances of success</span>
-            </li>
+            {(["competitiveItem1", "competitiveItem2", "competitiveItem3", "competitiveItem4"] as const).map((key) => (
+              <li key={key} className="flex gap-4">
+                <span className="text-blue-600 font-bold">✓</span>
+                <span className="text-gray-600">{t(`about.${key}`)}</span>
+              </li>
+            ))}
           </ul>
         </div>
 
         {/* Status */}
         <div className="bg-white rounded-xl p-12 border border-gray-200 mb-16">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">Platform Status</h2>
+          <h2 className="text-3xl font-bold mb-6 text-gray-900">{t("about.statusTitle")}</h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4 text-green-600">✓ Available Now (Web)</h3>
+              <h3 className="text-xl font-bold mb-4 text-green-600">{t("about.availableNow")}</h3>
               <ul className="space-y-2 text-gray-600">
-                <li>• Opportunity search with advanced filters</li>
-                <li>• Application management dashboard</li>
-                <li>• Kanban with application status</li>
-                <li>• Calendar with conflict detection</li>
-                <li>• Secure authentication</li>
+                {(["avail1", "avail2", "avail3", "avail4", "avail5"] as const).map((key) => (
+                  <li key={key}>• {t(`about.${key}`)}</li>
+                ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-4 text-blue-600">🚀 In Development (Mobile)</h3>
+              <h3 className="text-xl font-bold mb-4 text-blue-600">{t("about.inDev")}</h3>
               <ul className="space-y-2 text-gray-600">
-                <li>• Native iOS app</li>
-                <li>• Native Android app</li>
-                <li>• Push notifications for deadlines</li>
-                <li>• Offline-first for better experience</li>
-                <li>• Automatic synchronization</li>
+                {(["dev1", "dev2", "dev3", "dev4", "dev5"] as const).map((key) => (
+                  <li key={key}>• {t(`about.${key}`)}</li>
+                ))}
               </ul>
             </div>
           </div>
           <p className="text-gray-600 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <strong>Join early access:</strong> Be one of the first to use the mobile app when it launches. Your feedback will shape the platform's future.
+            <strong>{t("about.earlyAccessPart1")}</strong>
+            {t("about.earlyAccessPart2")}
           </p>
         </div>
 
         {/* Markets We Serve */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-gray-900">Markets We Serve</h2>
-          <p className="text-lg text-gray-600 mb-8">
-            NATTA was built with a focus on emerging markets, but offers global opportunities for everyone.
-          </p>
+          <h2 className="text-3xl font-bold mb-8 text-gray-900">{t("about.marketsTitle")}</h2>
+          <p className="text-lg text-gray-600 mb-8">{t("about.marketsBody")}</p>
           <div className="grid md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
-              <p className="text-2xl mb-2">🇧🇷</p>
-              <h3 className="font-bold mb-2">Brazil</h3>
-              <p className="text-sm text-gray-600">Access to global scholarships and programs</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
-              <p className="text-2xl mb-2">🇮🇳</p>
-              <h3 className="font-bold mb-2">India</h3>
-              <p className="text-sm text-gray-600">Opportunities for Indian talent</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
-              <p className="text-2xl mb-2">🌍</p>
-              <h3 className="font-bold mb-2">Africa</h3>
-              <p className="text-sm text-gray-600">Programs for African leaders</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 border border-gray-200 text-center">
-              <p className="text-2xl mb-2">🌏</p>
-              <h3 className="font-bold mb-2">Asia</h3>
-              <p className="text-sm text-gray-600">Opportunities across the region</p>
-            </div>
+            {(["brazil", "india", "africa", "asia"] as const).map((m, i) => (
+              <div key={m} className="bg-white rounded-xl p-6 border border-gray-200 text-center">
+                <p className="text-2xl mb-2">{["🇧🇷", "🇮🇳", "🌍", "🌏"][i]}</p>
+                <h3 className="font-bold mb-2">{t(`about.${m}Name`)}</h3>
+                <p className="text-sm text-gray-600">{t(`about.${m}Desc`)}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* CTA */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-lg text-gray-600 mb-8">Join thousands of candidates transforming their careers.</p>
+          <h2 className="text-3xl font-bold mb-4">{t("about.ctaTitle")}</h2>
+          <p className="text-lg text-gray-600 mb-8">{t("about.ctaBody")}</p>
           <Link href="/opportunities">
             <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 ease-in-out">
-              Explore Opportunities
+              {t("about.ctaBtn")}
             </button>
           </Link>
         </div>
