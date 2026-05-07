@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import AdminScraper from "./pages/AdminScraper";
 import AdminUsers from "./pages/AdminUsers";
 import Opportunities from "./pages/Opportunities";
+import OpportunityDetail from "./pages/OpportunityDetail";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import Dashboard from "./pages/Dashboard";
@@ -16,14 +17,39 @@ import Profile from "./pages/Profile";
 import SavedOpportunities from "./pages/SavedOpportunities";
 import AddOpportunity from "./pages/AddOpportunity";
 import EditOpportunity from "./pages/EditOpportunity";
+import { useAuth } from "./_core/hooks/useAuth";
+
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, loading } = useAuth();
+  const [, navigate] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
+
+  return <Component />;
+}
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
-      <Route path={"/opportunities"} component={Opportunities} />
+      <Route path={"/opportunities"}>
+        {() => <ProtectedRoute component={Opportunities} />}
+      </Route>
+      <Route path={"/opportunities/:id"}>
+        {() => <ProtectedRoute component={OpportunityDetail} />}
+      </Route>
       <Route path={"/saved"} component={SavedOpportunities} />
       <Route path={"/about"} component={About} />
       <Route path={"/faq"} component={FAQ} />
@@ -34,7 +60,6 @@ function Router() {
       <Route path={"/admin/add-opportunity"} component={AddOpportunity} />
       <Route path={"/admin/edit-opportunity/:id"} component={EditOpportunity} />
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
