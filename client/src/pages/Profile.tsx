@@ -39,8 +39,8 @@ export default function Profile() {
   const [profile, setProfile] = useState<UserProfile>({
     name: user?.name || "",
     email: user?.email || "",
-    bio: user?.bio || "Passionate about discovering global opportunities and building my future",
-    interests: (user?.interests as string[]) || ["Tech", "Business"],
+    bio: user?.bio || "",
+    interests: (user?.interests as string[]) || [],
   });
   const [savedMessage, setSavedMessage] = useState(false);
 
@@ -66,8 +66,8 @@ export default function Profile() {
       setProfile({
         name: user.name || "",
         email: user.email || "",
-        bio: user.bio || "Passionate about discovering global opportunities and building my future",
-        interests: (user.interests as string[]) || ["Tech", "Business"],
+        bio: user.bio || "",
+        interests: (user.interests as string[]) || [],
       });
     }
   }, [user]);
@@ -255,7 +255,11 @@ export default function Profile() {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-600 font-semibold">Bio</p>
-                  <p className="text-gray-900 mt-1">{profile.bio}</p>
+                  {profile.bio ? (
+                    <p className="text-gray-900 mt-1">{profile.bio}</p>
+                  ) : (
+                    <p className="text-gray-400 mt-1 italic">Conta um pouco sobre você, seus objetivos e o que você está buscando — clique em Editar para começar.</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 font-semibold mb-2">Your Interests</p>
