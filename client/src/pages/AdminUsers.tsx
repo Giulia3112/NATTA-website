@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,21 @@ export default function AdminUsers() {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
+  const [selectedOpportunityLabel, setSelectedOpportunityLabel] = useState("");
+  const [oppSearch, setOppSearch] = useState("");
+  const [showOppDropdown, setShowOppDropdown] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
+  const oppSearchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (oppSearchRef.current && !oppSearchRef.current.contains(e.target as Node)) {
+        setShowOppDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Check admin access first
   const hasAdminAccess = user?.role === 'admin' && user?.email === 'alvaresgiulia@gmail.com';
@@ -307,18 +321,70 @@ export default function AdminUsers() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Opportunity *
                 </label>
-                <select
-                  value={selectedOpportunityId || ""}
-                  onChange={(e) => setSelectedOpportunityId(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Choose an opportunity...</option>
-                  {opportunities?.map((opp) => (
-                    <option key={opp.id} value={opp.id}>
-                      {opp.title} - {opp.organizer}
-                    </option>
-                  ))}
-                </select>
+
+                {/* Selected opportunity badge */}
+                {selectedOpportunityId && (
+                  <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <span className="text-sm text-blue-900 font-medium flex-1 truncate">{selectedOpportunityLabel}</span>
+                    <button
+                      onClick={() => { setSelectedOpportunityId(null); setSelectedOpportunityLabel(""); setOppSearch(""); }}
+                      className="text-blue-400 hover:text-blue-600 flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Search input */}
+                <div className="relative" ref={oppSearchRef}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={oppSearch}
+                    onChange={(e) => { setOppSearch(e.target.value); setShowOppDropdown(true); }}
+                    onFocus={() => setShowOppDropdown(true)}
+                    placeholder="Pesquisar oportunidade pelo nome..."
+                    className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                  {/* Dropdown list */}
+                  {showOppDropdown && oppSearch.length >= 2 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {(() => {
+                        const filtered = (opportunities ?? []).filter((opp) =>
+                          opp.title.toLowerCase().includes(oppSearch.toLowerCase()) ||
+                          opp.organizer.toLowerCase().includes(oppSearch.toLowerCase())
+                        ).slice(0, 20);
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                              Nenhuma oportunidade encontrada
+                            </div>
+                          );
+                        }
+
+                        return filtered.map((opp) => (
+                          <button
+                            key={opp.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedOpportunityId(opp.id);
+                              setSelectedOpportunityLabel(`${opp.title} — ${opp.organizer}`);
+                              setOppSearch("");
+                              setShowOppDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors"
+                          >
+                            <p className="text-sm font-medium text-gray-900 truncate">{opp.title}</p>
+                            <p className="text-xs text-gray-500 truncate">{opp.organizer} · {opp.opportunityType}</p>
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Digite pelo menos 2 caracteres para pesquisar</p>
               </div>
 
               <div>
