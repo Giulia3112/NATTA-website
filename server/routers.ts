@@ -384,6 +384,14 @@ export const appRouter = router({
             organizer: opportunity.organizer,
             message: customMessage,
             opportunityId: opportunity.id,
+            description: opportunity.description,
+            deadline: opportunity.deadline,
+            mode: opportunity.mode,
+            funding: opportunity.funding,
+            fee: opportunity.fee,
+            opportunityType: opportunity.opportunityType,
+            fields: opportunity.fields ?? [],
+            applicationLink: opportunity.applicationLink,
           });
 
           if (result.ok) {
