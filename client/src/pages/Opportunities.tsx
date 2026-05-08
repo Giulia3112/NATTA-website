@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation } from "wouter";
-import { Search, MapPin, Calendar, DollarSign, ExternalLink, Pencil, Plus, X, CheckCircle } from "lucide-react";
+import { Search, MapPin, Calendar, DollarSign, ExternalLink, Pencil, Plus, X, CheckCircle, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AISearch from "@/components/AISearch";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ export default function Opportunities() {
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [addingOpp, setAddingOpp] = useState<{ id: number; title: string } | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const isAdmin = user?.role === 'admin';
@@ -119,22 +120,22 @@ export default function Opportunities() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="container py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
+        <div className="container py-3 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <img src="/natta-logo.png" alt="NATTA" className="h-7 sm:h-8" />
           </Link>
           {user && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 hidden sm:block">
                 {t("opportunities.hello")} {user.name?.split(" ")[0]}!
               </span>
               <Link href="/dashboard">
-                <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                <Button variant="outline" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                   {t("nav.dashboard")}
                 </Button>
               </Link>
               <Link href="/profile">
-                <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                <Button variant="outline" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                   {t("nav.profile")}
                 </Button>
               </Link>
@@ -142,7 +143,7 @@ export default function Opportunities() {
           )}
           {!user && (
             <Link href="/login">
-              <Button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+              <Button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
                 {t("nav.signIn")}
               </Button>
             </Link>
@@ -150,16 +151,16 @@ export default function Opportunities() {
         </div>
       </div>
 
-      <div className="container py-8">
-        <h1 className="text-4xl font-bold mb-2">{t("opportunities.title")}</h1>
-        <p className="text-gray-600 mb-6">{t("opportunities.subtitle")}</p>
+      <div className="container py-6 sm:py-8">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">{t("opportunities.title")}</h1>
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{t("opportunities.subtitle")}</p>
 
         {/* AI Search */}
         <AISearch />
 
-        {/* Classic Search Bar */}
-        <div className="mb-8">
-          <div className="relative">
+        {/* Classic Search Bar + mobile filter toggle */}
+        <div className="mb-4 sm:mb-8 flex gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
             <Input
               type="text"
@@ -169,17 +170,33 @@ export default function Opportunities() {
               className="pl-12 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 shrink-0"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {t("opportunities.filters.title")}
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-20">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg">{t("opportunities.filters.title")}</h3>
-                <button onClick={handleReset} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                  {t("opportunities.filters.clear")}
-                </button>
+          <div className={`lg:col-span-1 ${showFilters ? "block" : "hidden"} lg:block`}>
+            <div className="bg-white rounded-xl p-5 border border-gray-200 lg:sticky lg:top-20">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-bold text-base lg:text-lg">{t("opportunities.filters.title")}</h3>
+                <div className="flex items-center gap-3">
+                  <button onClick={handleReset} className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    {t("opportunities.filters.clear")}
+                  </button>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="lg:hidden p-1 rounded hover:bg-gray-100"
+                  >
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
               </div>
 
               {[
@@ -190,12 +207,12 @@ export default function Opportunities() {
                 { label: t("opportunities.filters.field"), value: selectedField, setter: setSelectedField, options: FIELDS },
                 { label: t("opportunities.filters.funding"), value: selectedFunding, setter: setSelectedFunding, options: FUNDING_TYPES },
               ].map(({ label, value, setter, options }) => (
-                <div key={label} className="mb-6">
-                  <label className="block text-sm font-semibold mb-3 text-gray-900">{label}</label>
+                <div key={label} className="mb-4">
+                  <label className="block text-sm font-semibold mb-2 text-gray-900">{label}</label>
                   <select
                     value={value}
                     onChange={(e) => setter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">{t("opportunities.filters.all")}</option>
                     {options.map((opt) => (

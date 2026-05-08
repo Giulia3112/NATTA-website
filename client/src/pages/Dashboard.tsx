@@ -151,19 +151,22 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="container py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/natta-logo.png" alt="NATTA" className="h-8" />
+        <div className="container py-3 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <img src="/natta-logo.png" alt="NATTA" className="h-7 sm:h-8" />
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">{t("dashboard.hello")} {user?.name?.split(" ")[0]}!</span>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:block text-sm text-gray-600 mr-1">
+              {t("dashboard.hello")} {user?.name?.split(" ")[0]}!
+            </span>
             <Link href="/opportunities">
-              <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                {t("dashboard.explore")}
+              <Button variant="outline" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                <span className="hidden sm:inline">{t("dashboard.explore")}</span>
+                <ArrowRight className="w-4 h-4 sm:hidden" />
               </Button>
             </Link>
             <Link href="/profile">
-              <Button variant="outline" className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <Button variant="outline" className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                 {t("nav.profile")}
               </Button>
             </Link>
@@ -171,48 +174,48 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="container py-8">
+      <div className="container py-6 sm:py-8">
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">{t("dashboard.title")}</h1>
-            <p className="text-gray-600">{t("dashboard.subtitle")}</p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-1">{t("dashboard.title")}</h1>
+            <p className="text-sm sm:text-base text-gray-600">{t("dashboard.subtitle")}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-5 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2 font-semibold transition-all duration-300 ease-in-out"
+              className="flex-1 sm:flex-none px-4 py-2 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-300 ease-in-out"
             >
-              <Plus className="w-5 h-5" />
-              {t("dashboard.add")}
+              <Plus className="w-4 h-4" />
+              <span className="sm:inline">{t("dashboard.add")}</span>
             </button>
-            <Link href="/opportunities">
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-semibold transition-all duration-300 ease-in-out">
-                <ArrowRight className="w-5 h-5" />
-                {t("dashboard.explore")}
+            <Link href="/opportunities" className="flex-1 sm:flex-none">
+              <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-semibold transition-all duration-300 ease-in-out">
+                <ArrowRight className="w-4 h-4" />
+                <span className="sm:inline">{t("dashboard.explore")}</span>
               </button>
             </Link>
           </div>
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-2 mb-6 sm:mb-8">
           <button
             onClick={() => setViewMode("kanban")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
               viewMode === "kanban" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            <LayoutGrid className="w-5 h-5" />
+            <LayoutGrid className="w-4 h-4" />
             {t("dashboard.kanban")}
           </button>
           <button
             onClick={() => setViewMode("calendar")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-in-out ${
               viewMode === "calendar" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            <Calendar className="w-5 h-5" />
+            <Calendar className="w-4 h-4" />
             {t("dashboard.calendar")}
           </button>
         </div>
