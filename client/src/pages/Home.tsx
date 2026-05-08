@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CheckCircle, Search, Calendar, Zap, Globe, Users } from "lucide-react";
+import { CheckCircle, Search, Calendar, Zap, Sparkles, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function Home() {
@@ -52,15 +52,16 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8">{t("home.hero.subtitle")}</p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <Link href="/opportunities">
                 <Button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 ease-in-out">
                   {t("home.hero.exploreBtn")}
                 </Button>
               </Link>
-              <Link href="/about">
-                <Button variant="outline" className="px-8 py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 ease-in-out">
-                  {t("home.hero.howItWorksBtn")}
+              <Link href="/opportunities">
+                <Button variant="outline" className="px-8 py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-300 ease-in-out flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  {t("home.hero.aiSearchBtn")}
                 </Button>
               </Link>
             </div>
@@ -90,7 +91,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-blue-600" />
+                      <Sparkles className="w-6 h-6 text-blue-600" />
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{t("home.features.detect.title")}</p>
@@ -122,7 +123,7 @@ export default function Home() {
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white rounded-xl p-8 border border-gray-100 hover:shadow-lg transition-all duration-300 ease-in-out">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <Search className="w-6 h-6 text-blue-600" />
+              <Sparkles className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="text-xl font-bold mb-3">{t("home.howItWorks.discover.title")}</h3>
             <p className="text-gray-600">{t("home.howItWorks.discover.body")}</p>
