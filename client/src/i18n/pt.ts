@@ -56,8 +56,7 @@ const pt = {
       company: "Empresa",
       legal: "Legal",
       aboutUs: "Sobre Nós",
-      privacy: "Privacidade",
-      terms: "Termos",
+      privacyTerms: "Privacidade & Termos",
       rights: "© 2026 NATTA. Todos os direitos reservados.",
     },
   },
@@ -430,6 +429,13 @@ const pt = {
   errorBoundary: {
     title: "Ocorreu um erro inesperado.",
     reload: "Recarregar Página",
+  },
+  legal: {
+    pageTitle: "Privacidade & Termos",
+    lastUpdated: "Última atualização: Maio de 2026",
+    privacyTab: "Política de Privacidade",
+    termsTab: "Termos de Uso",
+    contactNote: "Dúvidas? Fale conosco em",
   },
 };
 

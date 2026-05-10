@@ -17,6 +17,7 @@ import FAQ from "./pages/FAQ";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import SavedOpportunities from "./pages/SavedOpportunities";
+import Legal from "./pages/Legal";
 import AddOpportunity from "./pages/AddOpportunity";
 import EditOpportunity from "./pages/EditOpportunity";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -61,6 +62,7 @@ function Router() {
       <Route path={"/admin/users"} component={AdminUsers} />
       <Route path={"/admin/add-opportunity"} component={AddOpportunity} />
       <Route path={"/admin/edit-opportunity/:id"} component={EditOpportunity} />
+      <Route path={"/legal"} component={Legal} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
